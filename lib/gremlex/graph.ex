@@ -145,9 +145,14 @@ defmodule Gremlex.Graph do
   the side effect key that will hold the aggregate.
   Returns a graph to allow chaining.
   """
-  @spec properties(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  @spec store(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
   def store(graph, store) do
     enqueue(graph, "store", store)
+  end
+
+  @spec cap(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  def cap(graph, cap) do
+    enqueue(graph, "cap", cap)
   end
 
   @doc """
