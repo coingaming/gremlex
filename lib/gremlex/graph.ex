@@ -202,6 +202,11 @@ defmodule Gremlex.Graph do
     enqueue(graph, "V", [id])
   end
 
+  @spec v(Gremlex.Graph.t(), List.t() | String.t()) :: Gremlex.Graph.t()
+  def v(graph, id) do
+    enqueue(graph, "V", id)
+  end
+
   @doc """
   Appends values the `V` command allowing you to select a vertex.
   Returns a graph to allow chaining.
