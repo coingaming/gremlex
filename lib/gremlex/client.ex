@@ -91,6 +91,9 @@ defmodule Gremlex.Client do
           409 ->
             {:error, :malformed_request, error_message}
 
+          498 ->
+            {:error, :incompatible_data_types, error_message}
+
           499 ->
             {:error, :invalid_request_arguments, error_message}
 
