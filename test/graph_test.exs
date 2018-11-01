@@ -787,4 +787,12 @@ defmodule Gremlex.GraphTests do
       assert actual_graph == expected_graph
     end
   end
+
+  describe "cap/2" do
+    test "adds a cap function to the queue" do
+      actual_graph = g() |> cap("foo")
+      expected_graph = Queue.in({"cap", ["foo"]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
 end
