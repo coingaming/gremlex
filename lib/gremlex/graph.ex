@@ -53,6 +53,35 @@ defmodule Gremlex.Graph do
     enqueue(graph, "addE", [edge])
   end
 
+  @doc """
+  Appends an aggregate command to the traversal.
+  Returns a graph to allow chaining.
+  """
+  @spec aggregate(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  def aggregate(graph, aggregate) do
+    enqueue(graph, "aggregate", aggregate)
+  end
+
+  @spec barrier(Gremlex.Graph.t(), non_neg_integer()) :: Gremlex.Graph.t()
+  def barrier(graph, max_barrier_size) do
+    enqueue(graph, "barrier", max_barrier_size)
+  end
+
+  @spec barrier(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def barrier(graph) do
+    enqueue(graph, "barrier", [])
+  end
+
+  @doc """
+  Appends a coin command to the traversal. Takes in a graph and a probability
+  modifier as parameters.
+  Returns a graph to allow chaining.
+  """
+  @spec coin(Gremlex.Graph.t(), Float.t()) :: Gremlex.Graph.t()
+  def coin(graph, probability) do
+    enqueue(graph, "coin", probability)
+  end
+
   @spec has_label(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
   def has_label(graph, label) do
     enqueue(graph, "hasLabel", [label])
@@ -61,6 +90,11 @@ defmodule Gremlex.Graph do
   @spec has(Gremlex.Graph.t(), any(), any()) :: Gremlex.Graph.t()
   def has(graph, key, value) do
     enqueue(graph, "has", [key, value])
+  end
+
+  @spec key(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def key(graph) do
+    enqueue(graph, "key", [])
   end
 
   @doc """
@@ -92,7 +126,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "property", [:set, key, value])
   end
 
-    @doc """
+  @doc """
   Appends properties command to the traversal.
   Returns a graph to allow chaining.
   """
@@ -106,7 +140,17 @@ defmodule Gremlex.Graph do
     enqueue(graph, "properties", [])
   end
 
-      @doc """
+  @doc """
+  Appends the store command to the traversal. Takes in a graph and the name of
+  the side effect key that will hold the aggregate.
+  Returns a graph to allow chaining.
+  """
+  @spec properties(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  def store(graph, store) do
+    enqueue(graph, "store", store)
+  end
+
+  @doc """
   Appends valueMap command to the traversal.
   Returns a graph to allow chaining.
   """
@@ -322,14 +366,79 @@ defmodule Gremlex.Graph do
     enqueue(graph, "iterate", [])
   end
 
-  @spec id(Gremlex.Graph.t()) :: Gremlex.Graph.t()
-  def id(graph) do
-    enqueue(graph, "id", [])
+  @spec sum(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def sum(graph) do
+    enqueue(graph, "sum", [])
+  end
+
+  @spec inject(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  def inject(graph, target) do
+    enqueue(graph, "inject", [target])
+  end
+
+  @spec tail(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def tail(graph) do
+    enqueue(graph, "tail", [1])
+  end
+
+  @spec tail(Gremlex.Graph.t(), non_neg_integer()) :: Gremlex.Graph.t()
+  def tail(graph, size) do
+    enqueue(graph, "tail", [size])
+  end
+
+  @spec min(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def min(graph) do
+    enqueue(graph, "min", [])
+  end
+
+  @spec max(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def max(graph) do
+    enqueue(graph, "max", [])
   end
 
   @spec identity(Gremlex.Graph.t()) :: Gremlex.Graph.t()
   def identity(graph) do
     enqueue(graph, "identity", [])
+  end
+
+  @spec constant(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  def constant(graph, constant) do
+    enqueue(graph, "constant", constant)
+  end
+
+  @spec id(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def id(graph) do
+    enqueue(graph, "id", [])
+  end
+
+  @spec cyclic_path(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def cyclic_path(graph) do
+    enqueue(graph, "cyclicPath", [])
+  end
+
+  @spec count(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def count(graph) do
+    enqueue(graph, "count", [])
+  end
+
+  @spec group(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def group(graph) do
+    enqueue(graph, "group", [])
+  end
+
+  @spec group_count(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def group_count(graph) do
+    enqueue(graph, "groupCount", [])
+  end
+
+  @doc """
+  Appends groupCount command to the traversal. Takes in a graph and the name
+  of the key that will hold the aggregated grouping.
+  Returns a graph to allow chainig.
+  """
+  @spec group_count(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  def group_count(graph, key) do
+    enqueue(graph, "groupCount", key)
   end
 
   defp enqueue(graph, op, args) when is_list(args) do
@@ -380,6 +489,21 @@ defmodule Gremlex.Graph do
   @spec has_namespace(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
   def has_namespace(graph, ns) do
     graph |> has(namespace_property(), ns)
+  end
+
+  @spec has_id(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
+  def has_id(graph, id) do
+    enqueue(graph, "hasId", id)
+  end
+
+  @spec has_key(Gremlex.Graph.t(), List.t() | String.t()) :: Gremlex.Graph.t()
+  def has_key(graph, key) do
+    enqueue(graph, "hasKey", key)
+  end
+
+  @spec has_not(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  def has_not(graph, key) do
+    enqueue(graph, "hasNot", key)
   end
 
   @spec coalesce(Gremlex.Graph.t(), List.t() | String.t()) :: Gremlex.Graph.t()
@@ -517,11 +641,12 @@ defmodule Gremlex.Graph do
   @spec construct_fn_call(String.t(), String.t(), String.t(), Gremlex.Graph.t()) :: String.t()
   defp construct_fn_call("", "__", _, remainder), do: encode(remainder, "" <> "__")
 
-  defp construct_fn_call(_, "__", _, _), do: raise "Not a valid traversal"
+  defp construct_fn_call(_, "__", _, _), do: raise("Not a valid traversal")
 
   defp construct_fn_call("", op, args, remainder), do: encode(remainder, "" <> "#{op}(#{args})")
 
-  defp construct_fn_call(acc, op, args, remainder), do: encode(remainder, acc <> ".#{op}(#{args})")
+  defp construct_fn_call(acc, op, args, remainder),
+    do: encode(remainder, acc <> ".#{op}(#{args})")
 
   @spec escape(String.t()) :: String.t()
   defp escape(str) do

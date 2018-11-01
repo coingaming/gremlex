@@ -24,6 +24,7 @@ defmodule Gremlex.Client do
     case Socket.Web.connect(host, port, path: path, secure: secure) do
       {:ok, socket} ->
         GenServer.start_link(__MODULE__, socket, [])
+
       error ->
         Logger.error("Error establishing connection to server: #{inspect(error)}")
         GenServer.start_link(__MODULE__, %{}, [])

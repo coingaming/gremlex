@@ -27,6 +27,7 @@ defmodule Gremlex.ClientTests do
 
     test "allows you to create a new vertex with multiline property" do
       address = "23480 Park Sorrento, Suite 100 Calabasas, CA 91302"
+
       {result, response} =
         g()
         |> add_v("person")

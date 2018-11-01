@@ -3,6 +3,8 @@ language: elixir
 elixir: '1.6'
 services:
 - docker
+before_install:
+- mix format --check-formatted --dry-run
 install:
 - docker-compose -f docker-compose/docker-compose.yml build
 script:

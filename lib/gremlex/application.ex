@@ -9,10 +9,12 @@ defmodule Gremlex.Application do
   defp parse_port(port) when is_number(port), do: port
   defp parse_port(""), do: 8182
   defp parse_port(:not_set), do: :not_set
+
   defp parse_port(port_string) when is_binary(port_string) do
     case Integer.parse(port_string) do
       {port, ""} ->
         port
+
       _ ->
         raise ArgumentError, message: "Invalid Port: #{port_string}"
     end

@@ -100,3 +100,13 @@ simply have the parameters that need to be dynamically read at run time set to `
 * `path`: Websocket path to Gremlin (defaults to "/gremlin")
 * `pool_size`: The number of connections to keep open in the pool (defaults to 10)
 * `secure`: Set to `true` to connect to a server with SSL enabled
+
+## Contributing
+
+    $ git clone https://github.com/Revmaker/gremlex.git
+    $ cd gremlex
+    $ mix deps.get
+    $ mix test
+
+Once you've made your additions and `mix test` passes, go ahead and open a PR!
+Note: Please make sure you run `mix format` on the touched files :)
