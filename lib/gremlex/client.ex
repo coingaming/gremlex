@@ -3,6 +3,8 @@ defmodule Gremlex.Client do
   Gremlin Websocket Client
   """
 
+  @timeout Confex.fetch_env!(:gremlex, :timeout)
+
   @type state :: %{socket: Socket.Web.t()}
 
   @type response ::
@@ -49,7 +51,7 @@ defmodule Gremlex.Client do
       |> Poison.encode!()
 
     :poolboy.transaction(:gremlex, fn worker_pid ->
-      GenServer.call(worker_pid, {:query, payload})
+      GenServer.call(worker_pid, {:query, payload}, @timeout)
     end)
   end
 
@@ -59,7 +61,7 @@ defmodule Gremlex.Client do
     Socket.Web.send!(socket, {:text, payload})
 
     task = Task.async(fn -> recv(socket) end)
-    result = Task.await(task)
+    result = Task.await(task, @timeout)
 
     {:reply, result, state}
   end
