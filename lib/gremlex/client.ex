@@ -91,8 +91,12 @@ defmodule Gremlex.Client do
   def handle_call({:query, payload, timeout}, _from, %{socket: socket} = state) do
     Socket.Web.send!(socket, {:text, payload})
 
-    task = Task.async(fn -> recv(socket) end)
-    result = Task.await(task, timeout)
+    {time, result} = measure(fn ->
+      task = Task.async(fn -> recv(socket) end)
+      result = Task.await(task, timeout)
+    end)
+
+    Logger.info("Query #{payload} took #{time} seconds")
 
     {:reply, result, state}
   end
@@ -160,5 +164,10 @@ defmodule Gremlex.Client do
         Socket.Web.send!(socket, {:pong, ""})
         recv(socket, acc)
     end
+  end
+
+  def measure(function) do
+    {time, result} = function |> :timer.tc
+    {Kernel./(time, 1_000_000), result}
   end
 end
