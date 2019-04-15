@@ -82,7 +82,7 @@ defmodule Gremlex.Client do
 
     :poolboy.transaction(:gremlex, fn worker_pid ->
       GenServer.call(worker_pid, {:query, payload, timeout}, timeout)
-    end)
+    end, timeout)
   end
 
   # Server Methods
