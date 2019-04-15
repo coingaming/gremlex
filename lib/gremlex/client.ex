@@ -96,7 +96,7 @@ defmodule Gremlex.Client do
       result = Task.await(task, timeout)
     end)
 
-    Logger.info("Query #{payload} took #{time} seconds")
+    Logger.info("Query #{payload} took #{time} seconds and result `#{elem(result, 0)}`")
 
     {:reply, result, state}
   end
