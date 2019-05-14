@@ -87,6 +87,11 @@ defmodule Gremlex.Graph do
     enqueue(graph, "hasLabel", [label])
   end
 
+  @spec has(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
+  def has(graph, key) do
+    enqueue(graph, "has", [key])
+  end
+
   @spec has(Gremlex.Graph.t(), any(), any()) :: Gremlex.Graph.t()
   def has(graph, key, value) do
     enqueue(graph, "has", [key, value])

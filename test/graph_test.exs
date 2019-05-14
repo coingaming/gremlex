@@ -75,6 +75,14 @@ defmodule Gremlex.GraphTests do
     end
   end
 
+  describe "has/2" do
+    test "adds a has function to the queue" do
+      actual_graph = g() |> has("foo")
+      expected_graph = Queue.in({"has", ["foo"]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
   describe "has/3" do
     test "adds a has function to the queue" do
       actual_graph = g() |> has("foo", "bar")
