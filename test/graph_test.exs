@@ -1007,4 +1007,20 @@ defmodule Gremlex.GraphTests do
       assert actual_graph == expected_graph
     end
   end
+
+  describe "datetime/2" do
+    test "adds a datetime function to the queue" do
+      actual_graph = g() |> datetime("foo")
+      expected_graph = Queue.in({"datetime", ["foo"]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
+  describe "other_v/1" do
+    test "adds a otherV function to the queue" do
+      actual_graph = g() |> other_v()
+      expected_graph = Queue.in({"otherV", []}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
 end

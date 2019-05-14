@@ -151,4 +151,73 @@ defmodule Gremlex.Test.Mocks do
       "label" => "name"
     }
   end
+
+  def map() do
+    [
+      %{
+        "@type" => "g:T",
+        "@value" => "label"
+      },
+      "LABEL_1",
+      "created_at",
+      %{
+        "@type" => "g:List",
+        "@value" => [
+          %{
+            "@type" => "g:Date",
+            "@value" => 1_557_753_523_490
+          }
+        ]
+      },
+      %{
+        "@type" => "g:T",
+        "@value" => "id"
+      },
+      "VERTEX_1",
+      "prop1",
+      %{
+        "@type" => "g:List",
+        "@value" => [
+          false
+        ]
+      }
+    ]
+  end
+
+  def path() do
+    %{
+      "labels" => %{
+        "@type" => "g:List",
+        "@value" => [
+          %{
+            "@type" => "g:Set",
+            "@value" => []
+          },
+          %{
+            "@type" => "g:Set",
+            "@value" => []
+          }
+        ]
+      },
+      "objects" => %{
+        "@type" => "g:List",
+        "@value" => [
+          %{
+            "@type" => "g:Vertex",
+            "@value" => %{
+              "id" => "VERTEX_1",
+              "label" => "LABEL_1"
+            }
+          },
+          %{
+            "@type" => "g:Vertex",
+            "@value" => %{
+              "id" => "VERTEX_2",
+              "label" => "LABEL_1"
+            }
+          }
+        ]
+      }
+    }
+  end
 end

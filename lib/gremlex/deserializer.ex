@@ -2,7 +2,7 @@ defmodule Gremlex.Deserializer do
   @moduledoc """
   Deserializer module for deserializing data returned back from Gremlin.
   """
-  alias Gremlex.{Edge, Vertex, VertexProperty}
+  alias Gremlex.{Edge, Vertex, VertexProperty, Path}
 
   def deserialize(%{"result" => result}) do
     case result["data"] do
@@ -28,6 +28,21 @@ defmodule Gremlex.Deserializer do
       value ->
         value
     end)
+  end
+
+  def deserialize("g:Map", value) do
+    value
+    |> Enum.chunk_every(2)
+    |> Enum.reduce(%{}, fn
+      [key, %{"@type" => type, "@value" => value}], acc ->
+        Map.put(acc, key, deserialize(type, value))
+      [%{"@type" => "g:T", "@value" => key}, value], acc -> Map.put(acc, key, value)
+      [key, value], acc -> Map.put(acc, key, value)
+    end)
+  end
+
+  def deserialize("g:Path", value) do
+    Path.from_response(value)
   end
 
   def deserialize("g:Set", value) do

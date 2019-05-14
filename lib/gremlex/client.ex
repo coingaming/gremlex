@@ -53,8 +53,13 @@ defmodule Gremlex.Client do
 
       error ->
         Logger.error("Error establishing connection to server: #{inspect(error)}")
-        GenServer.start_link(__MODULE__, %{}, [])
+        GenServer.start_link(__MODULE__, nil, [])
     end
+  end
+
+  @spec init(nil) :: {:stop, String.t()}
+  def init(nil) do
+    {:stop, "Socket is missing"}
   end
 
   @spec init(Socket.Web.t()) :: state
@@ -93,7 +98,7 @@ defmodule Gremlex.Client do
 
     {time, result} = measure(fn ->
       task = Task.async(fn -> recv(socket) end)
-      result = Task.await(task, timeout)
+      Task.await(task, timeout)
     end)
 
     Logger.metadata([

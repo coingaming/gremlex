@@ -1,6 +1,6 @@
 defmodule Grmelex.DeserializerTests do
   import Gremlex.Deserializer
-  alias Gremlex.{Edge, Vertex, VertexProperty}
+  alias Gremlex.{Edge, Vertex, VertexProperty, Path}
   alias Gremlex.Test.Mocks
   use ExUnit.Case
   use ExUnitProperties
@@ -116,6 +116,33 @@ defmodule Grmelex.DeserializerTests do
       expected_property = %VertexProperty{id: 0, value: "marko", label: "name", vertex: nil}
 
       assert deserialize("g:VertexProperty", vertex_property) == expected_property
+    end
+
+    test "should deserialize map" do
+      map = Mocks.map()
+
+      expected_map = %{
+        "label" => "LABEL_1",
+        "created_at" => [DateTime.from_unix!(1_557_753_523_490, :microsecond)],
+        "id" => "VERTEX_1",
+        "prop1" => [false]
+      }
+
+      assert deserialize("g:Map", map) == expected_map
+    end
+
+    test "should deserialize path" do
+      path = Mocks.path()
+
+      expected_path = %Path{
+        labels: [MapSet.new(), MapSet.new()],
+        objects: [
+          %Vertex{id: "VERTEX_1", label: "LABEL_1", properties: %{}},
+          %Vertex{id: "VERTEX_2", label: "LABEL_1", properties: %{}}
+        ]
+      }
+
+      assert deserialize("g:Path", path) == expected_path
     end
   end
 end
