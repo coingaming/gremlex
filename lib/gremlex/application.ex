@@ -30,16 +30,16 @@ defmodule Gremlex.Application do
     end
   end
 
-  defp build_app_worker(:not_set, :not_set, :not_set, :not_set, _) do
+  defp build_app_worker(:not_set, :not_set, :not_set, :not_set, :not_set, _) do
     []
   end
 
-  defp build_app_worker(host, port, path, pool_size, secure) do
+  defp build_app_worker(host, port, path, pool_size, max_overflow, secure) do
     pool_options = [
       name: {:local, :gremlex},
       worker_module: Gremlex.Client,
       size: pool_size,
-      max_overflow: 10
+      max_overflow: max_overflow
     ]
 
     [:poolboy.child_spec(:gremlex, pool_options, {host, port, path, secure})]
@@ -51,9 +51,10 @@ defmodule Gremlex.Application do
     port = get_env(:port) |> parse_port()
     path = get_env(:path)
     pool_size = get_env(:pool_size)
+    max_overflow = get_env(:max_overflow)
     secure = get_env(:secure) |> parse_secure()
 
-    children = build_app_worker(host, port, path, pool_size, secure)
+    children = build_app_worker(host, port, path, pool_size, max_overflow, secure)
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

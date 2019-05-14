@@ -87,7 +87,8 @@ config :gremlex,
   port: 8182,
   path: "/gremlin",
   pool_size: 10,
-  secure: false
+  max_overflow: 10,
+  secure: false,
   ping_delay: 60_000
 ```
 

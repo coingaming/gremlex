@@ -5,4 +5,5 @@ config :gremlex,
   port: 8182,
   path: "/gremlin",
   pool_size: 10,
+  overflow: 10,
   secure: false

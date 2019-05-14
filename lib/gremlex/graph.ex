@@ -164,6 +164,11 @@ defmodule Gremlex.Graph do
     enqueue(graph, "valueMap", [])
   end
 
+  @spec value_map(Gremlex.Graph.t(), Boolean.t()) :: Gremlex.Graph.t()
+  def value_map(graph, value) when is_boolean(value) do
+    enqueue(graph, "valueMap", [value])
+  end
+
   @spec value_map(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
   def value_map(graph, value) when is_binary(value) do
     enqueue(graph, "valueMap", [value])
@@ -604,6 +609,31 @@ defmodule Gremlex.Graph do
   @spec not_(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
   def not_(graph, traversal) do
     enqueue(graph, "not", [traversal])
+  end
+
+  @spec other_v(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def other_v(graph) do
+    enqueue(graph, "otherV", [])
+  end
+
+  @spec datetime(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  def datetime(graph, iso_date_string) do
+    enqueue(graph, "datetime", [iso_date_string])
+  end
+
+  @spec union(Gremlex.Graph.t(), List.t()) :: Gremlex.Graph.t()
+  def union(graph, list) do
+    enqueue(graph, "union", list)
+  end
+
+  @spec label(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def label(graph) do
+    enqueue(graph, "label", [])
+  end
+
+  @spec project(Gremlex.Graph.t(), List.t()) :: Gremlex.Graph.t()
+  def project(graph, list) do
+    enqueue(graph, "project", list)
   end
 
   @doc """
