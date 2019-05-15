@@ -184,6 +184,41 @@ defmodule Gremlex.Test.Mocks do
     ]
   end
 
+  def map_with_int_as_vertex_id() do
+    [
+      %{
+        "@type" => "g:T",
+        "@value" => "label"
+      },
+      "LABEL_1",
+      "created_at",
+      %{
+        "@type" => "g:List",
+        "@value" => [
+          %{
+            "@type" => "g:Date",
+            "@value" => 1_557_753_523_490
+          }
+        ]
+      },
+      %{
+        "@type" => "g:T",
+        "@value" => "id"
+      },
+      %{
+        "@type" => "g:Int32",
+        "@value" => 1
+      },
+      "prop1",
+      %{
+        "@type" => "g:List",
+        "@value" => [
+          false
+        ]
+      }
+    ]
+  end
+
   def path() do
     %{
       "labels" => %{

@@ -131,6 +131,19 @@ defmodule Grmelex.DeserializerTests do
       assert deserialize("g:Map", map) == expected_map
     end
 
+    test "should deserialize map if id has int type" do
+      map = Mocks.map_with_int_as_vertex_id()
+
+      expected_map = %{
+        "label" => "LABEL_1",
+        "created_at" => [DateTime.from_unix!(1_557_753_523_490, :microsecond)],
+        "id" => 1,
+        "prop1" => [false]
+      }
+
+      assert deserialize("g:Map", map) == expected_map
+    end
+
     test "should deserialize path" do
       path = Mocks.path()
 
