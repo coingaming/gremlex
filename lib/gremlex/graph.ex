@@ -561,6 +561,11 @@ defmodule Gremlex.Graph do
     enqueue(graph, "select", names)
   end
 
+  @spec by(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def by(graph) do
+    enqueue(graph, "by", [])
+  end
+
   @spec by(Gremlex.Graph.t(), List.t() | String.t()) :: Gremlex.Graph.t()
   def by(graph, value) do
     enqueue(graph, "by", value)
