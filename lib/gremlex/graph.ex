@@ -687,23 +687,23 @@ defmodule Gremlex.Graph do
 
   @spec choose(Gremlex.Graph.t(), Gremlex.Graph.t(), [Gremlex.Graph.t()]) :: Gremlex.Graph.t()
   def choose(graph, predicate, traversals) do
-    enqueue(Queue.new(), "choose", traversals)
+    enqueue(graph, "choose", [predicate | traversals])
   end
 
 
   @spec range(Gremlex.Graph.t(), String.t(), Integer.t(), Integer.t()) :: Gremlex.Graph.t()
   def range(graph, arg, from, to) do
-    enqueue(Queue.new(), "range", [arg, from, to])
+    enqueue(graph, "range", [arg, from, to])
   end
 
   @spec limit(Gremlex.Graph.t(), Integer.t()) :: Gremlex.Graph.t()
   def limit(graph, limit) do
-    enqueue(Queue.new(), "limit", [limit])
+    enqueue(graph, "limit", [limit])
   end
 
   @spec limit(Gremlex.Graph.t(), String.t(), Integer.t()) :: Gremlex.Graph.t()
   def limit(graph, arg, limit) do
-    enqueue(Queue.new(), "limit", [arg, limit])
+    enqueue(graph, "limit", [arg, limit])
   end
 
   @doc """
