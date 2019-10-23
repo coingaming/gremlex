@@ -437,6 +437,11 @@ defmodule Gremlex.Graph do
   end
 
   @spec count(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def count(graph, arg) do
+    enqueue(graph, "count", [arg])
+  end
+
+  @spec count(Gremlex.Graph.t()) :: Gremlex.Graph.t()
   def count(graph) do
     enqueue(graph, "count", [])
   end
@@ -678,6 +683,27 @@ defmodule Gremlex.Graph do
 
   def without(values) do
     enqueue(Queue.new(), "without", values)
+  end
+
+  @spec choose(Gremlex.Graph.t(), Gremlex.Graph.t(), [Gremlex.Graph.t()]) :: Gremlex.Graph.t()
+  def choose(graph, predicate, traversals) do
+    enqueue(Queue.new(), "choose", traversals)
+  end
+
+
+  @spec range(Gremlex.Graph.t(), String.t(), Integer.t(), Integer.t()) :: Gremlex.Graph.t()
+  def range(graph, arg, from, to) do
+    enqueue(Queue.new(), "range", [arg, from, to])
+  end
+
+  @spec limit(Gremlex.Graph.t(), Integer.t()) :: Gremlex.Graph.t()
+  def limit(graph, limit) do
+    enqueue(Queue.new(), "limit", [limit])
+  end
+
+  @spec limit(Gremlex.Graph.t(), String.t(), Integer.t()) :: Gremlex.Graph.t()
+  def limit(graph, arg, limit) do
+    enqueue(Queue.new(), "limit", [arg, limit])
   end
 
   @doc """
