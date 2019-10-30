@@ -1075,8 +1075,8 @@ defmodule Gremlex.GraphTests do
   describe "choose/3" do
     test "adds a choose function to the queue" do
       actual_graph = g() |> choose(g |> has_label("TEST"), [g |> v("1")])
-      has_label_part = Queue.in({"has_label", ["TEST"]}, Queue.new())
-      vertex_part = Queue.in({"v", ["1"]}, Queue.new())
+      has_label_part = Queue.in({"hasLabel", ["TEST"]}, Queue.new())
+      vertex_part = Queue.in({"V", ["1"]}, Queue.new())
       expected_graph = Queue.in({"choose", [has_label_part, vertex_part]}, Queue.new())
       assert actual_graph == expected_graph
     end
