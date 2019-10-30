@@ -1,16 +1,18 @@
-FROM ubuntu:artful
+FROM ubuntu:bionic
 
 WORKDIR /srv
 
+ARG GREMLIN_VER=3.3.2
+
 RUN apt-get update
 
-RUN apt-get install -y unzip wget openjdk-9-jdk
+RUN apt-get install -y unzip wget openjdk-11-jdk
 
-RUN wget https://archive.apache.org/dist/tinkerpop/3.3.1/apache-tinkerpop-gremlin-server-3.3.1-bin.zip
+RUN wget https://archive.apache.org/dist/tinkerpop/$GREMLIN_VER/apache-tinkerpop-gremlin-server-$GREMLIN_VER-bin.zip
 
-RUN unzip apache-tinkerpop-gremlin-server-3.3.1-bin.zip
+RUN unzip apache-tinkerpop-gremlin-server-$GREMLIN_VER-bin.zip
 
-WORKDIR /srv/apache-tinkerpop-gremlin-server-3.3.1
+WORKDIR /srv/apache-tinkerpop-gremlin-server-$GREMLIN_VER
 
 COPY gremlin-conf.yaml conf/gremlin-conf.yaml
 

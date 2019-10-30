@@ -587,6 +587,14 @@ defmodule Gremlex.GraphTests do
     end
   end
 
+  describe "count/2" do
+    test "adds a count function to the queue" do
+      actual_graph = g() |> count(:local)
+      expected_graph = Queue.in({"count", [:local]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
   describe "group/1" do
     test "adds a group function to the queue" do
       actual_graph = g() |> group()
@@ -1028,6 +1036,48 @@ defmodule Gremlex.GraphTests do
     test "adds a otherV function to the queue" do
       actual_graph = g() |> other_v()
       expected_graph = Queue.in({"otherV", []}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
+  describe "range/3" do
+    test "adds a range function to the queue" do
+      actual_graph = g() |> range(0, 2)
+      expected_graph = Queue.in({"range", [0, 2]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
+  describe "range/4" do
+    test "adds a range function to the queue" do
+      actual_graph = g() |> range(:local, 0, 2)
+      expected_graph = Queue.in({"range", [:local, 0, 2]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
+  describe "limit/2" do
+    test "adds a limit function to the queue" do
+      actual_graph = g() |> limit(3)
+      expected_graph = Queue.in({"limit", [3]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
+  describe "limit/3" do
+    test "adds a limit function to the queue" do
+      actual_graph = g() |> limit(:local, 2)
+      expected_graph = Queue.in({"limit", [:local, 2]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
+  describe "choose/3" do
+    test "adds a choose function to the queue" do
+      actual_graph = g() |> choose(g |> has_label("TEST"), [g |> v("1")])
+      has_label_part = Queue.in({"hasLabel", ["TEST"]}, Queue.new())
+      vertex_part = Queue.in({"V", ["1"]}, Queue.new())
+      expected_graph = Queue.in({"choose", [has_label_part, vertex_part]}, Queue.new())
       assert actual_graph == expected_graph
     end
   end
