@@ -690,6 +690,10 @@ defmodule Gremlex.Graph do
     enqueue(graph, "choose", [predicate | traversals])
   end
 
+  @spec range(Gremlex.Graph.t(), String.t(), Integer.t(), Integer.t()) :: Gremlex.Graph.t()
+  def range(graph, from, to) do
+    enqueue(graph, "range", [from, to])
+  end
 
   @spec range(Gremlex.Graph.t(), String.t(), Integer.t(), Integer.t()) :: Gremlex.Graph.t()
   def range(graph, arg, from, to) do
