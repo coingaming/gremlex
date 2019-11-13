@@ -576,6 +576,11 @@ defmodule Gremlex.Graph do
     enqueue(graph, "by", value)
   end
 
+  @spec by(Gremlex.Graph.t(), List.t() | String.t(), atom()) :: Gremlex.Graph.t()
+  def by(graph, value, ordering) do
+    enqueue(graph, "by", [value, ordering])
+  end
+
   @spec path(Gremlex.Graph.t()) :: Gremlex.Graph.t()
   def path(graph) do
     enqueue(graph, "path", [])
@@ -596,6 +601,16 @@ defmodule Gremlex.Graph do
     enqueue(graph, "repeat", [traversal])
   end
 
+  @spec emit(Gremlex.Graph.t(), Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def emit(graph, traversal) do
+    enqueue(graph, "emit", [traversal])
+  end
+
+  @spec times(Gremlex.Graph.t(), integer()) :: Gremlex.Graph.t()
+  def times(graph, num) do
+    enqueue(graph, "times", [num])
+  end
+
   @spec until(Gremlex.Graph.t(), Gremlex.Graph.t()) :: Gremlex.Graph.t()
   def until(graph, traversal) do
     enqueue(graph, "until", [traversal])
@@ -614,6 +629,16 @@ defmodule Gremlex.Graph do
   @spec eq(Gremlex.Graph.t(), number()) :: Gremlex.Graph.t()
   def eq(graph, number) do
     enqueue(graph, "eq", [number])
+  end
+
+  @spec gt(Gremlex.Graph.t(), number()) :: Gremlex.Graph.t()
+  def gt(graph, number) do
+    enqueue(graph, "gt", [number])
+  end
+
+  @spec lt(Gremlex.Graph.t(), number()) :: Gremlex.Graph.t()
+  def lt(graph, number) do
+    enqueue(graph, "lt", [number])
   end
 
   @spec where(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
@@ -708,6 +733,11 @@ defmodule Gremlex.Graph do
   @spec limit(Gremlex.Graph.t(), String.t(), Integer.t()) :: Gremlex.Graph.t()
   def limit(graph, arg, limit) do
     enqueue(graph, "limit", [arg, limit])
+  end
+
+  @spec order(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def order(graph) do
+    enqueue(graph, "order", [])
   end
 
   @doc """

@@ -912,6 +912,14 @@ defmodule Gremlex.GraphTests do
     end
   end
 
+  describe "by/3" do
+    test "adds a by function to the queue" do
+      actual_graph = g() |> by("foo", :decr)
+      expected_graph = Queue.in({"by", ["foo", :decr]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
   describe "path/1" do
     test "adds a path function to the queue" do
       actual_graph = g() |> path()
@@ -1078,6 +1086,47 @@ defmodule Gremlex.GraphTests do
       has_label_part = Queue.in({"hasLabel", ["TEST"]}, Queue.new())
       vertex_part = Queue.in({"V", ["1"]}, Queue.new())
       expected_graph = Queue.in({"choose", [has_label_part, vertex_part]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
+  describe "emit/2" do
+    test "adds a emit function to the queue" do
+      actual_graph = g() |> emit(g() |> has_label("TEST"))
+      has_label_part = Queue.in({"hasLabel", ["TEST"]}, Queue.new())
+      expected_graph = Queue.in({"emit", [has_label_part]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
+  describe "times/2" do
+    test "adds a times function to the queue" do
+      actual_graph = g() |> times(3)
+      expected_graph = Queue.in({"times", [3]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
+  describe "gt/2" do
+    test "adds a gt function to the queue" do
+      actual_graph = g() |> gt(3)
+      expected_graph = Queue.in({"gt", [3]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
+  describe "lt/2" do
+    test "adds a lt function to the queue" do
+      actual_graph = g() |> lt(3)
+      expected_graph = Queue.in({"lt", [3]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
+  describe "order/1" do
+    test "adds a order function to the queue" do
+      actual_graph = g() |> order()
+      expected_graph = Queue.in({"order", []}, Queue.new())
       assert actual_graph == expected_graph
     end
   end
