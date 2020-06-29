@@ -96,19 +96,8 @@ defmodule Gremlex.Client do
   def handle_call({:query, payload, timeout}, _from, %{socket: socket} = state) do
     Socket.Web.send!(socket, {:text, payload})
 
-    {time, result} = measure(fn ->
-      task = Task.async(fn -> recv(socket) end)
-      Task.await(task, timeout)
-    end)
-
-    Logger.metadata([
-      query: payload,
-      time: time,
-      result_status: elem(result, 0),
-      result: elem(result, 1)
-    ])
-
-    Logger.info("Query #{payload} took #{time} seconds and result `#{elem(result, 0)}`")
+    task = Task.async(fn -> recv(socket) end)
+    result = Task.await(task, timeout)
 
     {:reply, result, state}
   end
