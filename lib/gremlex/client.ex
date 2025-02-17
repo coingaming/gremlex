@@ -25,7 +25,7 @@ defmodule Gremlex.Client do
         delay
 
       _ ->
-        Logger.warn("Found invalid ping delay value: #{value} -- Defaulting to 0")
+        Logger.warning("Found invalid ping delay value: #{value} -- Defaulting to 0")
         0
     end
   end
@@ -85,9 +85,13 @@ defmodule Gremlex.Client do
       |> Request.new()
       |> Poison.encode!()
 
-    :poolboy.transaction(:gremlex, fn worker_pid ->
-      GenServer.call(worker_pid, {:query, payload, timeout}, timeout)
-    end, timeout)
+    :poolboy.transaction(
+      :gremlex,
+      fn worker_pid ->
+        GenServer.call(worker_pid, {:query, payload, timeout}, timeout)
+      end,
+      timeout
+    )
   end
 
   # Server Methods
@@ -168,7 +172,7 @@ defmodule Gremlex.Client do
   end
 
   def measure(function) do
-    {time, result} = function |> :timer.tc
+    {time, result} = function |> :timer.tc()
     {Kernel./(time, 1_000_000), result}
   end
 end

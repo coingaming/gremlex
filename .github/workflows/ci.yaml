@@ -1,0 +1,67 @@
+name: Elixir CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+env:
+  MIX_ENV: test
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    # Set up a Gremlin Server instance
+    services:
+      rabbitmq:
+        image: "tinkerpop/gremlin-server:3.7"
+        ports:
+          - "8182:8182"
+
+    runs-on: ubuntu-latest
+    name: Test on OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
+    steps:
+    - uses: erlef/setup-beam@v1
+      name: Install Erlang and Elixir
+      id: setup-beam
+      with:
+        version-file: .tool-versions
+        version-type: strict
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deps Cache
+      uses: actions/cache@v4
+      with:
+        key: ${{ runner.os }}-deps-${{ hashFiles('./mix.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-deps
+        path: ./deps
+
+    - name: Build Cache
+      uses: actions/cache@v4
+      with:
+        key: ${{ runner.os }}-build-${{ hashFiles('./mix.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ hashFiles('./mix.lock') }}
+        path: ./_build
+
+    - name: Install dependencies
+      run: mix deps.get
+
+    - name: Compiles without warnings
+      run: mix compile --warnings-as-errors
+
+    - name: Check Formatting
+      run: mix format --check-formatted
+
+    # TODO: Enable credo later
+    # - name: Run credo
+    #   run: mix credo
+
+    - name: Run tests
+      run: mix test
