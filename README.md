@@ -1,5 +1,6 @@
 <p align="center"><img src="logo.png"></img></p>
 
+[![CI](https://github.com/coingaming/gremlex/actions/workflows/ci.yaml/badge.svg)](https://github.com/coingaming/gremlex/actions/workflows/ci.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # Gremlex
