@@ -12,14 +12,7 @@ defmodule Gremlex.MixProject do
       deps: deps(),
       description: description(),
       package: package(),
-      test_coverage: [tool: ExCoveralls],
       source_url: "https://github.com/coingaming/gremlex",
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.post": :test,
-        "coveralls.html": :test
-      ],
       docs: [
         # The main page in the docs
         main: "Gremlex",
