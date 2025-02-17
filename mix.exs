@@ -52,7 +52,7 @@ defmodule Gremlex.MixProject do
       {:mix_test_watch, "~> 0.3", only: :dev, runtime: false},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:mock, "~> 0.2.0", only: :test},
-      {:stream_data, "~> 0.1", only: :test}
+      {:stream_data, "~> 1.0", only: :test}
     ]
   end
 

@@ -7,3 +7,5 @@ config :gremlex,
   pool_size: 10,
   overflow: 10,
   secure: false
+
+config :logger, level: :warning
