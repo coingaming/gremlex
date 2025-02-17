@@ -45,7 +45,7 @@ jobs:
     - name: Run docker compose
       uses: hoverkraft-tech/compose-action@v2.0.1
       with:
-        docker-flags: "--wait"
+        compose-flags: "--wait"
 
     - name: Install dependencies
       run: mix deps.get
