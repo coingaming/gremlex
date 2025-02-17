@@ -23,15 +23,15 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - uses: erlef/setup-beam@v1
       name: Install Erlang and Elixir
       id: setup-beam
       with:
         version-file: .tool-versions
         version-type: strict
-
-    - name: Checkout code
-      uses: actions/checkout@v4
 
     - name: Deps Cache
       uses: actions/cache@v4
