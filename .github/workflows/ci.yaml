@@ -14,13 +14,6 @@ permissions:
 
 jobs:
   test:
-    # Set up a Gremlin Server instance
-    services:
-      rabbitmq:
-        image: "tinkerpop/gremlin-server:3.7"
-        ports:
-          - "8182:8182"
-
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -48,6 +41,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-build-${{ hashFiles('./mix.lock') }}
         path: ./_build
+
+    - name: Run docker compose
+      uses: hoverkraft-tech/compose-action@v2.0.1
+      with:
+        docker-flags: "--wait"
 
     - name: Install dependencies
       run: mix deps.get
