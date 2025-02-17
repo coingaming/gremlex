@@ -72,8 +72,7 @@ defmodule Gremlex.ClientTests do
     end
 
     test "allows you to get all edges" do
-      {result, response} = g() |> e() |> query()
-      assert result == :ok
+      {:ok, response} = g() |> e() |> query()
 
       case response do
         [] ->
@@ -82,7 +81,7 @@ defmodule Gremlex.ClientTests do
             |> v(0)
             |> add_e("edge_2_electric_booglaoo")
             |> to(%Gremlex.Vertex{id: 1, properties: nil, label: "no"})
-            |> query
+            |> query()
 
           assert Enum.count(edges) > 0
 
