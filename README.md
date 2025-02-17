@@ -1,6 +1,5 @@
 <p align="center"><img src="logo.png"></img></p>
 
-[![Build Status](https://travis-ci.com/Revmaker/gremlex.svg?branch=master)](https://travis-ci.com/Revmaker/gremlex)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # Gremlex
@@ -23,7 +22,7 @@ end
 
 ## Examples
 
-#### Basic Usage
+### Basic Usage
 The two main modules that you'll want to use are `Gremlex.Graph` and `Gremlex.Client`.
 
 `Gremlex.Graph` is the module that hosts all the functions needed to build a Gremlin query.
@@ -46,7 +45,7 @@ iex(3)> Graph.g() |> Graph.v() |> Client.query
  ]}
 ```
 
-#### Gremlin Query to Gremlex
+### Gremlin Query to Gremlex
 This gremlin query:
 ```
 g.V().has("name","marko")
@@ -106,10 +105,6 @@ simply have the parameters that need to be dynamically read at run time set to `
 
 ## Contributing
 
-    $ git clone https://github.com/Revmaker/gremlex.git
+    $ git clone https://github.com/coingaming/gremlex.git
     $ cd gremlex
-    $ mix deps.get
-    $ mix test
-
-Once you've made your additions and `mix test` passes, go ahead and open a PR!
-Note: Please make sure you run `mix format` on the touched files :)
+    $ ./scripts/test.sh
