@@ -44,7 +44,7 @@ defmodule Gremlex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:poison, "~> 3.1"},
+      {:jason, "~> 1.4"},
       {:confex, "~> 3.2.3"},
       {:poolboy, "~> 1.5.1"},
       {:socket, "~> 0.3"},

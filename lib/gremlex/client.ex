@@ -83,7 +83,7 @@ defmodule Gremlex.Client do
     payload =
       query
       |> Request.new()
-      |> Poison.encode!()
+      |> Jason.encode!()
 
     :poolboy.transaction(
       :gremlex,
@@ -127,7 +127,7 @@ defmodule Gremlex.Client do
   defp recv(socket, acc \\ []) do
     case Socket.Web.recv!(socket) do
       {:text, data} ->
-        response = Poison.decode!(data)
+        response = Jason.decode!(data)
         result = Deserializer.deserialize(response)
         status = response["status"]["code"]
         error_message = response["status"]["message"]
