@@ -13,7 +13,7 @@ defmodule Gremlex.MixProject do
       description: description(),
       package: package(),
       test_coverage: [tool: ExCoveralls],
-      source_url: "https://github.com/Revmaker/gremlex",
+      source_url: "https://github.com/coingaming/gremlex",
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.detail": :test,
@@ -45,10 +45,10 @@ defmodule Gremlex.MixProject do
   defp deps do
     [
       {:jason, "~> 1.4"},
-      {:confex, "~> 3.2.3"},
+      {:confex, "~> 3.0"},
       {:poolboy, "~> 1.5.1"},
       {:socket, "~> 0.3"},
-      {:ex_doc, "~> 0.19", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:stream_data, "~> 1.0", only: :test}
     ]
   end
@@ -61,7 +61,7 @@ defmodule Gremlex.MixProject do
     [
       name: "gremlex",
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/Revmaker/gremlex"}
+      links: %{"GitHub" => "https://github.com/coingaming/gremlex"}
     ]
   end
 end
