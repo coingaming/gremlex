@@ -5,7 +5,7 @@ defmodule Gremlex.MixProject do
     [
       app: :gremlex,
       version: "0.3.2",
-      elixir: "~> 1.6",
+      elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       elixirc_options: [warnings_as_errors: true],
       start_permanent: Mix.env() == :prod,
