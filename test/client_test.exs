@@ -2,11 +2,21 @@ defmodule Gremlex.ClientTests do
   use Gremlex
   use ExUnit.Case
 
+  setup do
+    # Cleanup DB
+    {:ok, _} = query("g.V().drop()")
+    :ok
+  end
+
   describe "query/1" do
     test "that it can return a successful query" do
-      {result, response} = g() |> v() |> query()
-      assert result == :ok
-      assert Enum.count(response) > 0
+      person_id = System.unique_integer([:positive])
+      vertex_id = "person#{person_id}"
+
+      assert {:ok, [%{label: ^vertex_id}]} =
+               g() |> add_v(vertex_id) |> property("name", "John Doe") |> query()
+
+      assert {:ok, [%{label: ^vertex_id}]} = g() |> v() |> query()
     end
 
     test "returns an error :script_evaluation_error for a bad request" do
@@ -72,22 +82,12 @@ defmodule Gremlex.ClientTests do
     end
 
     test "allows you to get all edges" do
-      {:ok, response} = g() |> e() |> query()
+      v1_id = System.unique_integer([:positive])
+      v2_id = System.unique_integer([:positive])
+      {_, [s]} = g() |> add_v("vertex_#{v1_id}") |> property("name", "vertex#{v1_id}") |> query()
+      {_, [t]} = g() |> add_v("vertex_#{v2_id}") |> property("name", "vertex#{v2_id}") |> query()
 
-      case response do
-        [] ->
-          {_res, edges} =
-            g()
-            |> v(0)
-            |> add_e("edge_2_electric_booglaoo")
-            |> to(%Gremlex.Vertex{id: 1, properties: nil, label: "no"})
-            |> query()
-
-          assert Enum.count(edges) > 0
-
-        edges ->
-          assert Enum.count(edges) > 0
-      end
+      {:ok, [%{label: "isfriend"}]} = g() |> v(s.id) |> add_e("isfriend") |> to(t) |> query()
     end
 
     test "returns empty list when there is no content retrieved" do
