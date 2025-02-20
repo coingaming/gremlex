@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :gremlex,
   host: {:system, "GREMLEX_HOST", "127.0.0.1"},
@@ -7,3 +7,5 @@ config :gremlex,
   pool_size: 10,
   overflow: 10,
   secure: false
+
+config :logger, level: :warning

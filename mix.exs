@@ -5,20 +5,14 @@ defmodule Gremlex.MixProject do
     [
       app: :gremlex,
       version: "0.3.2",
-      elixir: "~> 1.6",
+      elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
+      elixirc_options: [warnings_as_errors: true],
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
       package: package(),
-      test_coverage: [tool: ExCoveralls],
-      source_url: "https://github.com/Revmaker/gremlex",
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.post": :test,
-        "coveralls.html": :test
-      ],
+      source_url: "https://github.com/coingaming/gremlex",
       docs: [
         # The main page in the docs
         main: "Gremlex",
@@ -43,17 +37,12 @@ defmodule Gremlex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:poison, "~> 3.1"},
-      {:httpoison, "~> 1.3.1"},
-      {:confex, "~> 3.2.3"},
-      {:uuid, "~> 1.1"},
+      {:jason, "~> 1.4"},
+      {:confex, "~> 3.0"},
       {:poolboy, "~> 1.5.1"},
       {:socket, "~> 0.3"},
-      {:mix_test_watch, "~> 0.3", only: :dev, runtime: false},
-      {:ex_doc, "~> 0.19", only: :dev, runtime: false},
-      {:mock, "~> 0.2.0", only: :test},
-      {:excoveralls, "~> 0.7", only: :test},
-      {:stream_data, "~> 0.1", only: :test}
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false},
+      {:stream_data, "~> 1.0", only: :test}
     ]
   end
 
@@ -65,7 +54,7 @@ defmodule Gremlex.MixProject do
     [
       name: "gremlex",
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/Revmaker/gremlex"}
+      links: %{"GitHub" => "https://github.com/coingaming/gremlex"}
     ]
   end
 end

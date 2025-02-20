@@ -1,7 +1,0 @@
-{
-  "skip_files": [
-    "lib/gremlex.ex",
-    "test/support/mock_server.ex",
-    "test/support/mocks.ex"
- ]
-}

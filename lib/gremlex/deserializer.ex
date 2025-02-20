@@ -36,10 +36,15 @@ defmodule Gremlex.Deserializer do
     |> Enum.reduce(%{}, fn
       [%{"@type" => "g:T", "@value" => key}, %{"@type" => type, "@value" => value}], acc ->
         Map.put(acc, key, deserialize(type, value))
+
       [key, %{"@type" => type, "@value" => value}], acc ->
         Map.put(acc, key, deserialize(type, value))
-      [%{"@type" => "g:T", "@value" => key}, value], acc -> Map.put(acc, key, value)
-      [key, value], acc -> Map.put(acc, key, value)
+
+      [%{"@type" => "g:T", "@value" => key}, value], acc ->
+        Map.put(acc, key, value)
+
+      [key, value], acc ->
+        Map.put(acc, key, value)
     end)
   end
 

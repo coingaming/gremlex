@@ -1,6 +1,7 @@
 defmodule Gremlex.Request do
   alias Gremlex.Graph
-  @derive [Poison.Encoder]
+  alias Gremlex.Request.Id
+  @derive Jason.Encoder
   @op "eval"
   @processor ""
   @enforce_keys [:op, :processor, :requestId, :args]
@@ -12,7 +13,7 @@ defmodule Gremlex.Request do
   @spec new(String.t()) :: Request
   def new(query) when is_binary(query) do
     args = %{gremlin: query, language: "gremlin-groovy"}
-    %Gremlex.Request{requestId: UUID.uuid4(), args: args, op: @op, processor: @processor}
+    %Gremlex.Request{requestId: Id.generate(), args: args, op: @op, processor: @processor}
   end
 
   @spec new(Gremlex.Graph.t()) :: Request

@@ -7,7 +7,7 @@ defmodule Grmelex.DeserializerTests do
 
   describe "deserialize/2" do
     test "should deserialize integers" do
-      check all n <- integer() do
+      check all(n <- integer()) do
         assert deserialize("g:Int64", n) == n
         assert deserialize("g:Int32", n) == n
         assert deserialize("g:Float", n) == n
@@ -15,7 +15,7 @@ defmodule Grmelex.DeserializerTests do
     end
 
     test "should deserialize floats and doubles" do
-      check all f <- float() do
+      check all(f <- float()) do
         assert deserialize("g:Float", f) == f
         assert deserialize("g:Double", f) == f
       end

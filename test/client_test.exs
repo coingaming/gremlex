@@ -2,22 +2,32 @@ defmodule Gremlex.ClientTests do
   use Gremlex
   use ExUnit.Case
 
+  setup do
+    # Cleanup DB
+    {:ok, _} = query("g.V().drop()")
+    :ok
+  end
+
   describe "query/1" do
     test "that it can return a successful query" do
-      {result, response} = g() |> v() |> query
-      assert result == :ok
-      assert Enum.count(response) > 0
+      person_id = System.unique_integer([:positive])
+      vertex_id = "person#{person_id}"
+
+      assert {:ok, [%{label: ^vertex_id}]} =
+               g() |> add_v(vertex_id) |> property("name", "John Doe") |> query()
+
+      assert {:ok, [%{label: ^vertex_id}]} = g() |> v() |> query()
     end
 
     test "returns an error :script_evaluation_error for a bad request" do
-      {result, response, error_message} = g() |> to(1) |> query
+      {result, response, error_message} = g() |> to(1) |> query()
       assert result == :error
       assert response == :script_evaluation_error
       assert error_message != ""
     end
 
     test "allows you to create a new vertex" do
-      {result, response} = g() |> add_v("person") |> property("name", "jasper") |> query
+      {result, response} = g() |> add_v("person") |> property("name", "jasper") |> query()
       assert Enum.count(response) == 1
       assert result == :ok
       [vertex] = response
@@ -33,7 +43,7 @@ defmodule Gremlex.ClientTests do
         |> add_v("person")
         |> property("name", "jasper")
         |> property("address", address)
-        |> query
+        |> query()
 
       assert Enum.count(response) == 1
       assert result == :ok
@@ -48,7 +58,7 @@ defmodule Gremlex.ClientTests do
     end
 
     test "allows you to create a new vertex without a property" do
-      {result, response} = g() |> add_v("person") |> query
+      {result, response} = g() |> add_v("person") |> query()
       assert Enum.count(response) == 1
       assert result == :ok
       [vertex] = response
@@ -65,35 +75,24 @@ defmodule Gremlex.ClientTests do
     test "allows you to create a relationship between two vertices" do
       {_, [s]} = g() |> add_v("foo") |> property("name", "bar") |> query()
       {_, [t]} = g() |> add_v("bar") |> property("name", "baz") |> query()
-      {result, response} = g() |> v(s.id) |> add_e("isfriend") |> to(t) |> query
+      {result, response} = g() |> v(s.id) |> add_e("isfriend") |> to(t) |> query()
       assert result == :ok
       [edge] = response
       assert edge.label == "isfriend"
     end
 
     test "allows you to get all edges" do
-      {result, response} = g() |> e() |> query
-      assert result == :ok
+      v1_id = System.unique_integer([:positive])
+      v2_id = System.unique_integer([:positive])
+      {_, [s]} = g() |> add_v("vertex_#{v1_id}") |> property("name", "vertex#{v1_id}") |> query()
+      {_, [t]} = g() |> add_v("vertex_#{v2_id}") |> property("name", "vertex#{v2_id}") |> query()
 
-      case response do
-        [] ->
-          {_res, edges} =
-            g()
-            |> v(0)
-            |> add_e("edge_2_electric_booglaoo")
-            |> to(%Gremlex.Vertex{id: 1, properties: nil, label: "no"})
-            |> query
-
-          assert Enum.count(edges) > 0
-
-        edges ->
-          assert Enum.count(edges) > 0
-      end
+      {:ok, [%{label: "isfriend"}]} = g() |> v(s.id) |> add_e("isfriend") |> to(t) |> query()
     end
 
     test "returns empty list when there is no content retrieved" do
       {_, response} =
-        g() |> v() |> has_label("person") |> has("doesntExist", "doesntExist") |> query
+        g() |> v() |> has_label("person") |> has("doesntExist", "doesntExist") |> query()
 
       assert(response == [])
     end

@@ -4,7 +4,7 @@ defmodule Gremlex.Path do
 
   @type t :: %Path{labels: List.t(), objects: List.t()}
   @enforce_keys [:labels, :objects]
-  @derive [Poison.Encoder]
+  @derive Jason.Encoder
   defstruct [:labels, :objects]
 
   def from_response(%{"labels" => labels, "objects" => objects}) do

@@ -1,0 +1,64 @@
+name: Elixir CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+env:
+  MIX_ENV: test
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - uses: erlef/setup-beam@v1
+      name: Install Erlang and Elixir
+      id: setup-beam
+      with:
+        version-file: .tool-versions
+        version-type: strict
+
+    - name: Deps Cache
+      uses: actions/cache@v4
+      with:
+        key: ${{ runner.os }}-deps-${{ hashFiles('./mix.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-deps
+        path: ./deps
+
+    - name: Build Cache
+      uses: actions/cache@v4
+      with:
+        key: ${{ runner.os }}-build-${{ hashFiles('./mix.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ hashFiles('./mix.lock') }}
+        path: ./_build
+
+    - name: Run docker compose
+      uses: hoverkraft-tech/compose-action@v2.0.1
+      with:
+        up-flags: "--wait" 
+
+    - name: Install dependencies
+      run: mix deps.get
+
+    - name: Compiles without warnings
+      run: mix compile --warnings-as-errors
+
+    - name: Check Formatting
+      run: mix format --check-formatted
+
+    # TODO: Enable credo later
+    # - name: Run credo
+    #   run: mix credo
+
+    - name: Run tests
+      run: mix test
