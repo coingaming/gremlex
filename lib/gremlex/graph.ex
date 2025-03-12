@@ -807,10 +807,10 @@ defmodule Gremlex.Graph do
   end
 
   defp namespace_property do
-    Confex.get_env(:gremlex, :namespace_property, @default_namespace_property)
+    Application.get_env(:gremlex, :namespace_property, @default_namespace_property)
   end
 
   defp namespace do
-    Confex.get_env(:gremlex, :namespace_name, @default_namespace)
+    Application.get_env(:gremlex, :namespace_name, @default_namespace)
   end
 end

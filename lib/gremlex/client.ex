@@ -36,7 +36,7 @@ defmodule Gremlex.Client do
 
   @spec get_delay() :: number()
   defp get_delay do
-    case Confex.fetch_env(:gremlex, :ping_delay) do
+    case Application.get_env(:gremlex, :ping_delay) do
       {:ok, value} ->
         parse_delay(value)
 

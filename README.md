@@ -92,10 +92,6 @@ config :gremlex,
   ping_delay: 60_000
 ```
 
-Gremlex uses [confex](https://github.com/Nebo15/confex), so that you can easily define
-your configuration to use environment variables when it comes time to deploying. To do so,
-simply have the parameters that need to be dynamically read at run time set to `{:SYSTEM, "ENV_VAR_NAME"}`.
-
 ### Parameters
 * `host`: Gremlin host to connect to (defaults to "127.0.0.1")
 * `port`: Port Gremlin is listening to on host (defaults to 8182)

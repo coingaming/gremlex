@@ -23,13 +23,6 @@ defmodule Gremlex.Application do
   defp parse_secure(:not_set), do: false
   defp parse_secure(is_secure), do: is_secure
 
-  defp get_env(param) do
-    case Confex.fetch_env(:gremlex, param) do
-      {:ok, value} -> value
-      :error -> :not_set
-    end
-  end
-
   defp build_app_worker(:not_set, :not_set, :not_set, :not_set, :not_set, _) do
     []
   end
@@ -47,12 +40,12 @@ defmodule Gremlex.Application do
 
   def start(_type, _args) do
     # List all child processes to be supervised
-    host = get_env(:host)
-    port = get_env(:port) |> parse_port()
-    path = get_env(:path)
-    pool_size = get_env(:pool_size)
-    max_overflow = get_env(:max_overflow)
-    secure = get_env(:secure) |> parse_secure()
+    host = Application.get_env(:gremlex, :host, :not_set)
+    port = Application.get_env(:gremlex, :port, :not_set) |> parse_port()
+    path = Application.get_env(:gremlex, :path, :not_set)
+    pool_size = Application.get_env(:gremlex, :pool_size, :not_set)
+    max_overflow = Application.get_env(:gremlex, :max_overflow, :not_set)
+    secure = Application.get_env(:gremlex, :secure, :not_set) |> parse_secure()
 
     children = build_app_worker(host, port, path, pool_size, max_overflow, secure)
 
