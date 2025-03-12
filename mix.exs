@@ -40,7 +40,7 @@ defmodule Gremlex.MixProject do
       {:jason, "~> 1.4"},
       {:confex, "~> 3.0"},
       {:poolboy, "~> 1.5.1"},
-      {:socket, "~> 0.3"},
+      {:socket2, git: "git@github.com:witchtails/elixir-socket2.git"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:stream_data, "~> 1.0", only: :test}
     ]
