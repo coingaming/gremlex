@@ -47,6 +47,13 @@ defmodule Gremlex.Application do
     max_overflow = Application.get_env(:gremlex, :max_overflow, :not_set)
     secure = Application.get_env(:gremlex, :secure, :not_set) |> parse_secure()
 
+    ## TODO: cleanup after testing
+    url = "#{host}:#{port}#{path}"
+    Logger.info("Connecting to #{url}")
+
+    response = HTTPoison.get!(url)
+    Logger.info("Connection response: #{inspect(response)}")
+
     children = build_app_worker(host, port, path, pool_size, max_overflow, secure)
 
     # See https://hexdocs.pm/elixir/Supervisor.html

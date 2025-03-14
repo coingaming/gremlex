@@ -41,7 +41,8 @@ defmodule Gremlex.MixProject do
       {:poolboy, "~> 1.5.1"},
       {:socket2, git: "https://github.com/coingaming/elixir-socket2.git"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
-      {:stream_data, "~> 1.0", only: :test}
+      {:stream_data, "~> 1.0", only: :test},
+      {:httpoison, "~> 2.0"}
     ]
   end
 
