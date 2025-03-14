@@ -48,10 +48,16 @@ defmodule Gremlex.Application do
     secure = Application.get_env(:gremlex, :secure, :not_set) |> parse_secure()
 
     ## TODO: cleanup after testing
-    url = "#{host}:#{port}#{path}"
-    Logger.info("Connecting to #{url}")
+    {http_scheme, opts} =
+      if secure do
+        {:https, [transport_opts: [middlebox_comp_mode: false]]}
+      else
+        {:http, []}
+      end
 
-    response = HTTPoison.get!(url)
+    response =
+      Mint.HTTP.connect(http_scheme, host, port, opts)
+
     Logger.info("Connection response: #{inspect(response)}")
 
     children = build_app_worker(host, port, path, pool_size, max_overflow, secure)

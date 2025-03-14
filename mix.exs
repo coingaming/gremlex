@@ -42,7 +42,7 @@ defmodule Gremlex.MixProject do
       {:socket2, git: "https://github.com/coingaming/elixir-socket2.git"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:stream_data, "~> 1.0", only: :test},
-      {:httpoison, "~> 2.0"}
+      {:mint, "~> 1.0"}
     ]
   end
 
