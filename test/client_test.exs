@@ -19,10 +19,10 @@ defmodule Gremlex.ClientTests do
       assert {:ok, [%{label: ^vertex_id}]} = g() |> v() |> query()
     end
 
-    test "returns an error :script_evaluation_error for a bad request" do
+    test "returns an error :SCRIPT_EVALUATION_ERROR for a bad request" do
       {result, response, error_message} = g() |> to(1) |> query()
       assert result == :error
-      assert response == :script_evaluation_error
+      assert response == :SCRIPT_EVALUATION_ERROR
       assert error_message != ""
     end
 
