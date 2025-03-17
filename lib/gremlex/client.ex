@@ -83,11 +83,7 @@ defmodule Gremlex.Client do
         [
           :https,
           :wss,
-          [
-            versions: [:"tlsv1.2"],
-            middlebox_comp_mode: false,
-            cacerts: :public_key.cacerts_get()
-          ]
+          [middlebox_comp_mode: false]
         ]
       else
         [:http, :ws, []]
@@ -97,7 +93,8 @@ defmodule Gremlex.Client do
 
     Logger.info("Connecting to: #{http_scheme}://#{host}:#{port} ...")
 
-    with {:ok, conn} <- Mint.HTTP.connect(http_scheme, host, port, transport_opts),
+    with {:ok, conn} <-
+           Mint.HTTP.connect(http_scheme, host, port, transport_opts: transport_opts),
          :ok <- Logger.info("Connecting to ws: #{ws_scheme}://#{host}:#{port}/#{ws_path} ..."),
          {:ok, conn, ref} <-
            Mint.WebSocket.upgrade(ws_scheme, conn, ws_path, [],
