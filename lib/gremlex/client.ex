@@ -94,7 +94,7 @@ defmodule Gremlex.Client do
     Logger.info("Connecting to: #{http_scheme}://#{host}:#{port} ...")
 
     with {:ok, conn} <-
-           Mint.HTTP.connect(http_scheme, host, port, transport_opts: transport_opts),
+           Mint.HTTP.connect(http_scheme, host, port, transport_opts: transport_opts, log: true),
          :ok <- Logger.info("Connecting to ws: #{ws_scheme}://#{host}:#{port}/#{ws_path} ..."),
          {:ok, conn, ref} <-
            Mint.WebSocket.upgrade(ws_scheme, conn, ws_path, [],
