@@ -80,9 +80,17 @@ defmodule Gremlex.Client do
   def handle_continue({:connect, host, port, options}, %State{} = state) do
     http_scheme = if options[:secure], do: :https, else: :http
     ws_scheme = if options[:secure], do: :wss, else: :ws
+
+    transport_opts = [
+      versions: [:"tlsv1.2"]
+    ]
+
     ws_path = options[:path] || "/"
 
-    with {:ok, conn} <- Mint.HTTP.connect(http_scheme, host, port),
+    Logger.info("Connecting to: #{http_scheme}://#{host}:#{port} ...")
+
+    with {:ok, conn} <- Mint.HTTP.connect(http_scheme, host, port, transport_opts),
+         :ok <- Logger.info("Connecting to ws: #{ws_scheme}://#{host}:#{port}/#{ws_path} ..."),
          {:ok, conn, ref} <-
            Mint.WebSocket.upgrade(ws_scheme, conn, ws_path, [],
              extensions: [Mint.WebSocket.PerMessageDeflate]
