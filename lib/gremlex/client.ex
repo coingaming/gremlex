@@ -83,7 +83,7 @@ defmodule Gremlex.Client do
         [
           :https,
           :wss,
-          [middlebox_comp_mode: false]
+          [versions: [:"tlsv1.3"]]
         ]
       else
         [:http, :ws, []]
