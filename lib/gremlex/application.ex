@@ -47,19 +47,6 @@ defmodule Gremlex.Application do
     max_overflow = Application.get_env(:gremlex, :max_overflow, :not_set)
     secure = Application.get_env(:gremlex, :secure, :not_set) |> parse_secure()
 
-    ## TODO: cleanup after testing
-    {http_scheme, opts} =
-      if secure do
-        {:https, [transport_opts: [middlebox_comp_mode: false]]}
-      else
-        {:http, []}
-      end
-
-    response =
-      Mint.HTTP.connect(http_scheme, host, port, opts)
-
-    Logger.info("Connection response: #{inspect(response)}")
-
     children = build_app_worker(host, port, path, pool_size, max_overflow, secure)
 
     # See https://hexdocs.pm/elixir/Supervisor.html
