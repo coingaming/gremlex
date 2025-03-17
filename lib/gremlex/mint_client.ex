@@ -1,4 +1,4 @@
-defmodule Gremlex.MintClient do
+defmodule Gremlex.Client do
   @moduledoc """
   A Mint-based WebSocket client for Gremlin Server.
 
@@ -8,9 +8,9 @@ defmodule Gremlex.MintClient do
   ## Example
 
   ```
-  iex> Gremlex.MintClient.start_link({host: "localhost", port: 8182, path: "/gremlin", secure: false})
+  iex> Gremlex.Client.start_link({host: "localhost", port: 8182, path: "/gremlin", secure: false})
   {:ok, #PID<0.123.0>}
-  iex> Gremlex.MintClient.query(%Gremlex.Graph{vertices: [%Gremlex.Vertex{id: "1", label: "person"}]})
+  iex> Gremlex.Client.query(%Gremlex.Graph{vertices: [%Gremlex.Vertex{id: "1", label: "person"}]})
   {:ok, [%Gremlex.Vertex{id: "1", label: "person"}]}
   ```
   """
@@ -68,9 +68,10 @@ defmodule Gremlex.MintClient do
     GenServer.start_link(__MODULE__, opts)
   end
 
+  # Callbacks
   @impl GenServer
   def init({host, port, path, secure}) do
-    Logger.info("Initializing MintClient...")
+    Logger.info("Initializing Client...")
 
     {:ok, %State{}, {:continue, {:connect, host, port, [path: path, secure: secure]}}}
   end
@@ -101,7 +102,7 @@ defmodule Gremlex.MintClient do
 
   @impl GenServer
   def handle_call({:query, query, timeout}, _from, %State{conn: conn} = state) do
-    Logger.info("Received query: #{inspect(query)}")
+    Logger.info("Processing query: #{inspect(query)}")
 
     {:ok, conn_p} = Mint.HTTP.set_mode(conn, :passive)
     state = put_in(state.conn, conn_p)
@@ -112,7 +113,7 @@ defmodule Gremlex.MintClient do
     {result, state} =
       case send_frame(state, {:text, payload}) do
         {:ok, state} ->
-          Logger.info("Sent query: #{inspect(query)}")
+          Logger.debug("Sent query: #{inspect(query)}")
 
           # Wait for the response
           # task = Task.async(fn -> recv(state, timeout) end)
@@ -131,25 +132,33 @@ defmodule Gremlex.MintClient do
   end
 
   def handle_call(message, _from, %State{} = state) do
-    Logger.info("Received unhandled call: #{inspect(message)}")
+    Logger.debug("Received unhandled call: #{inspect(message)}")
     {:reply, :ok, state}
   end
 
   @impl GenServer
   def handle_info(:ping, %State{} = state) do
     send_frame(state, {:ping, ""})
+
+    Logger.debug("Sent ping!")
     schedule_ping()
 
     {:noreply, state}
   end
 
   def handle_info(message, %State{} = state) do
-    Logger.info("Received info: #{inspect(message)}")
+    Logger.debug("Received info: #{inspect(message)}")
 
     case Mint.WebSocket.stream(state.conn, message) do
       {:ok, conn, responses} ->
         state = put_in(state.conn, conn) |> handle_responses(responses)
-        if state.closing?, do: do_close(state), else: {:noreply, state}
+
+        if state.closing? do
+          do_close(state)
+          {:stop, :normal, state}
+        else
+          {:noreply, state}
+        end
 
       {:error, conn, reason, _responses} ->
         Logger.error("Received error: #{inspect(reason)}")
@@ -160,9 +169,18 @@ defmodule Gremlex.MintClient do
     end
   end
 
+  @impl GenServer
+  def terminate(reason, %State{} = state) do
+    Logger.info("Terminating Client with reason: #{inspect(reason)}")
+    do_close(state)
+
+    :ok
+  end
+
+  # Internal functions
   defp handle_responses(%State{request_ref: ref, websocket: websocket} = state, responses) do
     Enum.reduce(responses, state, fn response, state ->
-      Logger.info("Handling response: #{inspect(response)}")
+      Logger.debug("Handling response: #{inspect(response)}")
 
       case response do
         # reply to pings with pongs
@@ -175,7 +193,7 @@ defmodule Gremlex.MintClient do
           state
 
         {:close, _code, reason} ->
-          Logger.info("Closing connection: #{inspect(reason)}")
+          Logger.debug("Closing connection: #{inspect(reason)}")
           %{state | closing?: true}
 
         {:status, ^ref, status} ->
@@ -188,22 +206,26 @@ defmodule Gremlex.MintClient do
           # create a new websocket for the next request
           case Mint.WebSocket.new(state.conn, ref, state.status, state.resp_headers) do
             {:ok, conn, websocket} ->
-              Logger.info("New connection created!")
+              Logger.debug("New connection created!")
               %{state | conn: conn, websocket: websocket, status: nil, resp_headers: nil}
 
             {:error, conn, reason} ->
-              Logger.info("Received error new: #{inspect(reason)}")
+              Logger.debug("Received error new: #{inspect(reason)}")
               put_in(state.conn, conn)
           end
 
         {:data, ^ref, data} when not is_nil(websocket) ->
           case Mint.WebSocket.decode(state.websocket, data) do
+            {:ok, _websocket, [pong: ""]} ->
+              Logger.debug("Received pong!")
+              state
+
             {:ok, _websocket, frames} ->
-              Logger.info("Decoded data: #{inspect(frames)}")
+              Logger.debug("Decoded data: #{inspect(frames)}")
               put_in(state.websocket, websocket)
 
             {:error, websocket, reason} ->
-              Logger.info("Decode error: #{inspect(reason)}")
+              Logger.debug("Decode error: #{inspect(reason)}")
               put_in(state.websocket, websocket)
           end
 
@@ -211,7 +233,7 @@ defmodule Gremlex.MintClient do
           state
 
         frame ->
-          Logger.info("Unexpected frame received: #{inspect(frame)}")
+          Logger.debug("Unexpected frame received: #{inspect(frame)}")
           state
       end
     end)
@@ -220,7 +242,7 @@ defmodule Gremlex.MintClient do
   defp send_frame(%State{conn: conn, websocket: websocket, request_ref: ref} = state, frame) do
     with {:ok, websocket, data} <- Mint.WebSocket.encode(websocket, frame),
          {:ok, conn} <- Mint.WebSocket.stream_request_body(conn, ref, data) do
-      Logger.info("Sending frame: #{inspect(frame)}")
+      Logger.debug("Sending frame: #{inspect(frame)}")
 
       {:ok, %{state | conn: conn, websocket: websocket}}
     else
@@ -237,7 +259,6 @@ defmodule Gremlex.MintClient do
     # for writing.
     _ = send_frame(state, :close)
     Mint.HTTP.close(state.conn)
-    {:stop, :normal, state}
   end
 
   defp recv(

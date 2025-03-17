@@ -30,7 +30,7 @@ defmodule Gremlex.Application do
   defp build_app_worker(host, port, path, pool_size, max_overflow, secure) do
     pool_options = [
       name: {:local, :gremlex},
-      worker_module: Gremlex.MintClient,
+      worker_module: Gremlex.Client,
       size: pool_size,
       max_overflow: max_overflow
     ]
