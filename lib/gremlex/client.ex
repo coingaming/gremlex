@@ -78,12 +78,20 @@ defmodule Gremlex.Client do
 
   @impl true
   def handle_continue({:connect, host, port, options}, %State{} = state) do
-    http_scheme = if options[:secure], do: :https, else: :http
-    ws_scheme = if options[:secure], do: :wss, else: :ws
-
-    transport_opts = [
-      versions: [:"tlsv1.2"]
-    ]
+    [http_scheme, ws_scheme, transport_opts] =
+      if options[:secure] do
+        [
+          :https,
+          :wss,
+          [
+            versions: [:"tlsv1.2"],
+            middlebox_comp_mode: false,
+            cacerts: :public_key.cacerts_get()
+          ]
+        ]
+      else
+        [:http, :ws, []]
+      end
 
     ws_path = options[:path] || "/"
 
