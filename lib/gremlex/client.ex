@@ -160,8 +160,8 @@ defmodule Gremlex.Client do
           {:noreply, state}
         end
 
-      {:error, conn, reason, _responses} ->
-        Logger.error("Received error: #{inspect(reason)}")
+      {:error, conn, reason, responses} ->
+        Logger.error("Received error: #{inspect(reason)}", responses: responses)
         {:noreply, put_in(state.conn, conn)}
 
       :unknown ->
@@ -257,8 +257,12 @@ defmodule Gremlex.Client do
   defp do_close(%State{} = state) do
     # Streaming a close frame may fail if the server has already closed
     # for writing.
-    _ = send_frame(state, :close)
-    Mint.HTTP.close(state.conn)
+    try do
+      _ = send_frame(state, :close)
+      Mint.HTTP.close(state.conn)
+    rescue
+      _ -> :ok
+    end
   end
 
   defp recv(
