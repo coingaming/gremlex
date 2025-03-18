@@ -70,32 +70,18 @@ defmodule Gremlex.Client do
 
   # Callbacks
   @impl GenServer
-  def init({host, port, path, secure}) do
+  def init({host, port, path, secure, opts}) do
     Logger.info("Initializing Client...")
 
-    {:ok, %State{}, {:continue, {:connect, host, port, [path: path, secure: secure]}}}
+    {:ok, %State{}, {:continue, {:connect, host, port, path, secure, opts}}}
   end
 
   @impl true
-  def handle_continue({:connect, host, port, options}, %State{} = state) do
-    [http_scheme, ws_scheme, transport_opts] =
-      if options[:secure] do
-        [
-          :https,
-          :wss,
-          [versions: [:"tlsv1.3"]]
-        ]
-      else
-        [:http, :ws, []]
-      end
-
-    ws_path = options[:path] || "/"
-
-    Logger.info("Connecting to: #{http_scheme}://#{host}:#{port} ...")
+  def handle_continue({:connect, host, port, ws_path, secure, opts}, %State{} = state) do
+    {http_scheme, ws_scheme} = if secure, do: {:https, :wss}, else: {:http, :ws}
 
     with {:ok, conn} <-
-           Mint.HTTP.connect(http_scheme, host, port, transport_opts: transport_opts, log: true),
-         :ok <- Logger.info("Connecting to ws: #{ws_scheme}://#{host}:#{port}/#{ws_path} ..."),
+           Mint.HTTP.connect(http_scheme, host, port, opts),
          {:ok, conn, ref} <-
            Mint.WebSocket.upgrade(ws_scheme, conn, ws_path, [],
              extensions: [Mint.WebSocket.PerMessageDeflate]
