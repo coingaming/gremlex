@@ -19,10 +19,10 @@ defmodule Gremlex.ClientTests do
       assert {:ok, [%{label: ^vertex_id}]} = g() |> v() |> query()
     end
 
-    test "returns an error :script_evaluation_error for a bad request" do
+    test "returns an error :SCRIPT_EVALUATION_ERROR for a bad request" do
       {result, response, error_message} = g() |> to(1) |> query()
       assert result == :error
-      assert response == :script_evaluation_error
+      assert response == :SCRIPT_EVALUATION_ERROR
       assert error_message != ""
     end
 
@@ -104,6 +104,41 @@ defmodule Gremlex.ClientTests do
       [vertex] = response
       assert vertex.label == "person"
       assert vertex.properties == %{name: ["jasper"]}
+    end
+
+    test "allows you to update a vertex property" do
+      {_, [vertex]} = g() |> add_v("person") |> property("name", "jasper") |> query()
+      {result, response} = g() |> v(vertex.id) |> property("name", "john") |> query()
+      assert result == :ok
+      [updated_vertex] = response
+      assert updated_vertex.properties.name == ["john"]
+    end
+
+    test "allows you to delete a vertex" do
+      {_, [vertex]} = g() |> add_v("person") |> property("name", "jasper") |> query()
+      {result, _} = g() |> v(vertex.id) |> drop() |> query()
+      assert result == :ok
+      {_, response} = g() |> v(vertex.id) |> query()
+      assert response == []
+    end
+
+    test "allows you to delete an edge" do
+      {_, [s]} = g() |> add_v("foo") |> property("name", "bar") |> query()
+      {_, [t]} = g() |> add_v("bar") |> property("name", "baz") |> query()
+      {_, [edge]} = g() |> v(s.id) |> add_e("isfriend") |> to(t) |> query()
+      {result, _} = g() |> e(edge.id) |> drop() |> query()
+      assert result == :ok
+      {_, response} = g() |> e(edge.id) |> query()
+      assert response == []
+    end
+
+    test "returns an error for invalid Gremlin syntax" do
+      {result, response, error_message} = query("g.addV('person').property('name', )")
+      assert result == :error
+      assert response == :SCRIPT_EVALUATION_ERROR
+
+      assert error_message ==
+               "No signature of method: org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal.property() is applicable for argument types: (String) values: [name]\nPossible solutions: hasProperty(java.lang.String)"
     end
   end
 end

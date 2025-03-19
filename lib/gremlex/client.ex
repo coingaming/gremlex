@@ -1,76 +1,52 @@
 defmodule Gremlex.Client do
   @moduledoc """
-  Gremlin Websocket Client
+  A Mint-based WebSocket client for Gremlin Server.
+
+  This module is a GenServer that connects to a Gremlin Server using the WebSocket protocol.
+  It sends queries to the server and receives responses. It also handles pings and pongs to keep the connection alive.
+
+  ## Example
+
+  ```
+  iex> Gremlex.Client.start_link({host: "localhost", port: 8182, path: "/gremlin", secure: false})
+  {:ok, #PID<0.123.0>}
+  iex> Gremlex.Client.query(%Gremlex.Graph{vertices: [%Gremlex.Vertex{id: "1", label: "person"}]})
+  {:ok, [%Gremlex.Vertex{id: "1", label: "person"}]}
+  ```
   """
+  use GenServer, restart: :transient
 
-  @type state :: %{socket: Socket.Web.t()}
-
-  @type response ::
-          {:ok, list()}
-          | {:error, :unauthorized, String.t()}
-          | {:error, :malformed_request, String.t()}
-          | {:error, :invalid_request_arguments, String.t()}
-          | {:error, :server_error, String.t()}
-          | {:error, :script_evaluation_error, String.t()}
-          | {:error, :server_timeout, String.t()}
-          | {:error, :server_serialization_error, String.t()}
-
-  require Logger
-  alias Gremlex.Request
   alias Gremlex.Deserializer
 
-  defp parse_delay(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {delay, ""} ->
-        delay
+  require Logger
 
-      _ ->
-        Logger.warning("Found invalid ping delay value: #{value} -- Defaulting to 0")
-        0
-    end
+  @type error_code ::
+          :UNAUTHORIZED
+          | :MALFORMED_REQUEST
+          | :INVALID_REQUEST_ARGUMENTS
+          | :SERVER_ERROR
+          | :SCRIPT_EVALUATION_ERROR
+          | :SERVER_TIMEOUT
+          | :SERVER_SERIALIZATION_ERROR
+
+  @type response :: {:ok, list()} | {:error, error_code(), reason :: String.t()}
+
+  # Internal state
+  defmodule State do
+    @moduledoc false
+    @type t :: %__MODULE__{
+            conn: Mint.HTTP.t(),
+            request_ref: Mint.Types.request_ref(),
+            caller: pid(),
+            websocket: Mint.WebSocket.t(),
+            status: Mint.Types.status(),
+            resp_headers: Mint.Types.headers(),
+            closing?: boolean()
+          }
+    defstruct [:conn, :websocket, :request_ref, :caller, :status, :resp_headers, :closing?]
   end
 
-  defp parse_delay(delay) when is_number(delay), do: delay
-
-  defp parse_delay(_), do: 0
-
-  @spec get_delay() :: number()
-  defp get_delay do
-    case Application.get_env(:gremlex, :ping_delay) do
-      {:ok, value} ->
-        parse_delay(value)
-
-      _ ->
-        0
-    end
-  end
-
-  @spec start_link({String.t(), number(), String.t(), boolean()}) :: pid()
-  def start_link({host, port, path, secure}) do
-    case Socket.Web.connect(host, port, path: path, secure: secure) do
-      {:ok, socket} ->
-        GenServer.start_link(__MODULE__, socket, [])
-
-      error ->
-        Logger.error("Error establishing connection to server: #{inspect(error)}")
-        GenServer.start_link(__MODULE__, nil, [])
-    end
-  end
-
-  @spec init(nil) :: {:stop, String.t()}
-  def init(nil) do
-    {:stop, "Socket is missing"}
-  end
-
-  @spec init(Socket.Web.t()) :: state
-  def init(socket) do
-    state = %{socket: socket}
-    schedule()
-    {:ok, state}
-  end
-
-  # Public Methods
-
+  # Public APIs
   @doc """
   Accepts a graph which it converts into a query and queries the database.
 
@@ -80,99 +56,273 @@ defmodule Gremlex.Client do
   """
   @spec query(Gremlex.Graph.t() | String.t(), number() | :infinity) :: response
   def query(query, timeout \\ 5000) do
-    payload =
-      query
-      |> Request.new()
-      |> Jason.encode!()
-
     :poolboy.transaction(
       :gremlex,
-      fn worker_pid ->
-        GenServer.call(worker_pid, {:query, payload, timeout}, timeout)
-      end,
+      fn worker_pid -> GenServer.call(worker_pid, {:query, query, timeout}, timeout) end,
       timeout
     )
   end
 
-  # Server Methods
-  @spec handle_call({:query, String.t(), number() | :infinity}, pid(), state) ::
-          {:reply, response, state}
-  def handle_call({:query, payload, timeout}, _from, %{socket: socket} = state) do
-    Socket.Web.send!(socket, {:text, payload})
-
-    task = Task.async(fn -> recv(socket) end)
-    result = Task.await(task, timeout)
-
-    {:reply, result, state}
+  @spec start_link(term()) :: GenServer.on_start()
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts)
   end
 
-  def handle_info(:ping, %{socket: socket} = state) do
-    Logger.debug("Ping!")
-    Socket.Web.send!(socket, {:pong, ""})
-    schedule()
+  # Callbacks
+  @impl GenServer
+  def init({host, port, path, secure, opts}) do
+    Logger.info("Initializing Client...")
+
+    {:ok, %State{}, {:continue, {:connect, host, port, path, secure, opts}}}
+  end
+
+  @impl true
+  def handle_continue({:connect, host, port, ws_path, secure, opts}, %State{} = state) do
+    {http_scheme, ws_scheme} = if secure, do: {:https, :wss}, else: {:http, :ws}
+
+    with {:ok, conn} <-
+           Mint.HTTP.connect(http_scheme, host, port, opts),
+         {:ok, conn, ref} <-
+           Mint.WebSocket.upgrade(ws_scheme, conn, ws_path, [],
+             extensions: [Mint.WebSocket.PerMessageDeflate]
+           ) do
+      Logger.info("Websocket connected successfully!")
+
+      schedule_ping()
+      {:noreply, %{state | conn: conn, request_ref: ref}}
+    else
+      {:error, reason} ->
+        {:stop, reason, state}
+
+      {:error, _conn, reason} ->
+        {:stop, reason, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:query, query, timeout}, _from, %State{conn: conn} = state) do
+    Logger.debug("Processing query: #{inspect(query)}")
+
+    {:ok, conn_p} = Mint.HTTP.set_mode(conn, :passive)
+    state = put_in(state.conn, conn_p)
+
+    ## Send the query
+    payload = query |> Gremlex.Request.new() |> Jason.encode!()
+
+    {result, state} =
+      case send_frame(state, {:text, payload}) do
+        {:ok, state} ->
+          Logger.debug("Sent query: #{inspect(query)}")
+
+          {recv(state, timeout), state}
+
+        {:error, state, reason} ->
+          {{:error, reason}, state}
+      end
+
+    Logger.debug("Query result: #{inspect(result)}")
+
+    {:ok, conn_a} = Mint.HTTP.set_mode(conn, :active)
+
+    {:reply, result, %{state | conn: conn_a}}
+  end
+
+  def handle_call(message, _from, %State{} = state) do
+    Logger.debug("Received unhandled call: #{inspect(message)}")
+    {:reply, :ok, state}
+  end
+
+  @impl GenServer
+  def handle_info(:ping, %State{} = state) do
+    send_frame(state, {:ping, ""})
+
+    Logger.debug("Sent ping!")
+    schedule_ping()
+
     {:noreply, state}
   end
 
-  defp schedule do
-    delay = get_delay()
-    Logger.debug("Delay: #{delay}")
+  def handle_info(message, %State{} = state) do
+    Logger.debug("Received info: #{inspect(message)}")
 
-    if delay > 0 do
-      Process.send_after(self(), :ping, delay)
-    end
-  end
+    case Mint.WebSocket.stream(state.conn, message) do
+      {:ok, conn, responses} ->
+        state = put_in(state.conn, conn)
+        state = Enum.reduce(responses, state, &handle_response/2)
 
-  # Private Methods
-  @spec recv(Socket.Web.t(), list()) :: response
-  defp recv(socket, acc \\ []) do
-    case Socket.Web.recv!(socket) do
-      {:text, data} ->
-        response = Jason.decode!(data)
-        result = Deserializer.deserialize(response)
-        status = response["status"]["code"]
-        error_message = response["status"]["message"]
-        # Continue to block until we receive a 200 status code
-        case status do
-          200 ->
-            {:ok, acc ++ result}
-
-          204 ->
-            {:ok, []}
-
-          206 ->
-            recv(socket, acc ++ result)
-
-          401 ->
-            {:error, :unauthorized, error_message}
-
-          409 ->
-            {:error, :malformed_request, error_message}
-
-          499 ->
-            {:error, :invalid_request_arguments, error_message}
-
-          500 ->
-            {:error, :server_error, error_message}
-
-          597 ->
-            {:error, :script_evaluation_error, error_message}
-
-          598 ->
-            {:error, :server_timeout, error_message}
-
-          599 ->
-            {:error, :server_serialization_error, error_message}
+        if state.closing? do
+          do_close(state)
+          {:stop, :normal, state}
+        else
+          {:noreply, state}
         end
 
-      {:ping, _} ->
-        # Keep the connection alive
-        Socket.Web.send!(socket, {:pong, ""})
-        recv(socket, acc)
+      {:error, conn, reason, responses} ->
+        Logger.error("Received error: #{inspect(reason)}", responses: responses)
+        {:noreply, put_in(state.conn, conn)}
+
+      :unknown ->
+        {:noreply, state}
     end
   end
 
-  def measure(function) do
-    {time, result} = function |> :timer.tc()
-    {Kernel./(time, 1_000_000), result}
+  @impl GenServer
+  def terminate(reason, %State{} = state) do
+    Logger.info("Terminating Client with reason: #{inspect(reason)}")
+    do_close(state)
+
+    :ok
+  end
+
+  # Internal functions
+  defp handle_response({:ping, data} = _response, %State{} = state) do
+    # reply to pings with pongs
+    {:ok, state} = send_frame(state, {:pong, data})
+    state
+  end
+
+  defp handle_response({:pong, data} = _response, %State{} = state) do
+    # reply to pongs with pings
+    {:ok, state} = send_frame(state, {:ping, data})
+    state
+  end
+
+  defp handle_response({:close, _code, reason} = _response, %State{} = state) do
+    Logger.debug("Closing connection: #{inspect(reason)}")
+    %{state | closing?: true}
+  end
+
+  defp handle_response({:status, ref, status} = _response, %State{request_ref: ref} = state) do
+    put_in(state.status, status)
+  end
+
+  defp handle_response({:headers, ref, resp_headers}, %State{request_ref: ref} = state) do
+    put_in(state.resp_headers, resp_headers)
+  end
+
+  defp handle_response({:done, ref} = _response, %State{request_ref: ref} = state) do
+    # create a new websocket for the next request
+    case Mint.WebSocket.new(state.conn, ref, state.status, state.resp_headers) do
+      {:ok, conn, websocket} ->
+        Logger.debug("New connection created!")
+        %{state | conn: conn, websocket: websocket, status: nil, resp_headers: nil}
+
+      {:error, conn, reason} ->
+        Logger.debug("Received error new: #{inspect(reason)}")
+        put_in(state.conn, conn)
+    end
+  end
+
+  defp handle_response(
+         {:data, ref, data} = _response,
+         %State{request_ref: ref, websocket: websocket} = state
+       )
+       when not is_nil(websocket) do
+    case Mint.WebSocket.decode(websocket, data) do
+      {:ok, _websocket, [pong: ""]} ->
+        Logger.debug("Received pong!")
+        state
+
+      {:ok, _websocket, frames} ->
+        Logger.debug("Decoded data: #{inspect(frames)}")
+        put_in(state.websocket, websocket)
+
+      {:error, websocket, reason} ->
+        Logger.debug("Decode error: #{inspect(reason)}")
+        put_in(state.websocket, websocket)
+    end
+  end
+
+  defp handle_response({:text, _text} = _response, %State{} = state) do
+    state
+  end
+
+  defp handle_response(frame = _response, %State{} = state) do
+    Logger.debug("Unexpected frame received: #{inspect(frame)}")
+    state
+  end
+
+  defp send_frame(%State{conn: conn, websocket: websocket, request_ref: ref} = state, frame) do
+    with {:ok, websocket, data} <- Mint.WebSocket.encode(websocket, frame),
+         {:ok, conn} <- Mint.WebSocket.stream_request_body(conn, ref, data) do
+      Logger.debug("Sending frame: #{inspect(frame)}")
+
+      {:ok, %{state | conn: conn, websocket: websocket}}
+    else
+      {:error, %Mint.WebSocket{} = websocket, reason} ->
+        {:error, put_in(state.websocket, websocket), reason}
+
+      {:error, conn, reason} ->
+        {:error, put_in(state.conn, conn), reason}
+    end
+  end
+
+  defp do_close(%State{} = state) do
+    # Streaming a close frame may fail if the server has already closed
+    # for writing.
+    try do
+      _ = send_frame(state, :close)
+      Mint.HTTP.close(state.conn)
+    rescue
+      _ -> :ok
+    end
+  end
+
+  defp recv(
+         %State{conn: conn, websocket: websocket, request_ref: ref} = state,
+         timeout,
+         acc \\ []
+       ) do
+    with {:ok, conn, [{:data, ^ref, data}]} <- Mint.WebSocket.recv(conn, 0, timeout),
+         {:ok, _websocket, result} <- Mint.WebSocket.decode(websocket, data) do
+      case result do
+        [{:text, query_result}] ->
+          response = Jason.decode!(query_result)
+          result = Deserializer.deserialize(response)
+          status = response["status"]["code"]
+          error_message = response["status"]["message"]
+          # Continue to block until we receive a 200 status code
+          case status do
+            200 ->
+              {:ok, acc ++ result}
+
+            204 ->
+              {:ok, []}
+
+            206 ->
+              recv(conn, timeout, acc ++ result)
+
+            401 ->
+              {:error, :UNAUTHORIZED, error_message}
+
+            409 ->
+              {:error, :MALFORMED_REQUEST, error_message}
+
+            499 ->
+              {:error, :INVALID_REQUEST_ARGUMENTS, error_message}
+
+            500 ->
+              {:error, :SERVER_ERROR, error_message}
+
+            597 ->
+              {:error, :SCRIPT_EVALUATION_ERROR, error_message}
+
+            598 ->
+              {:error, :SERVER_TIMEOUT, error_message}
+
+            599 ->
+              {:error, :SERVER_SERIALIZATION_ERROR, error_message}
+          end
+
+        [{:ping, _}] ->
+          # Keep the connection alive
+          send_frame(state, {:pong, ""})
+          :ok
+      end
+    end
+  end
+
+  defp schedule_ping do
+    Process.send_after(self(), :ping, 30_000)
   end
 end

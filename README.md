@@ -89,7 +89,8 @@ config :gremlex,
   pool_size: 10,
   max_overflow: 10,
   secure: false,
-  ping_delay: 60_000
+  ping_delay: 60_000,
+  opts: []
 ```
 
 ### Parameters
@@ -99,6 +100,7 @@ config :gremlex,
 * `pool_size`: The number of connections to keep open in the pool (defaults to 10)
 * `secure`: Set to `true` to connect to a server with SSL enabled
 * `ping_delay`: Delay in milliseconds to send a pong frame to the server. If 0, then a pong frame won't be scheduled. (defaults to 0)
+* `opts`: A keyword list of options for customizing the webSocket connection, such as timeouts, SSL settings, or proxy configurations. This corresponds to the same option in [Mint.WebSocket options](https://hexdocs.pm/mint_web_socket/Mint.WebSocket.html#new/5-options)
 
 ## Contributing
 

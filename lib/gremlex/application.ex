@@ -6,9 +6,27 @@ defmodule Gremlex.Application do
   use Application
   require Logger
 
+  def start(_type, _args) do
+    # List all child processes to be supervised
+    host = Application.get_env(:gremlex, :host)
+    port = Application.get_env(:gremlex, :port) |> parse_port()
+    path = Application.get_env(:gremlex, :path) || "/"
+    pool_size = Application.get_env(:gremlex, :pool_size) || 10
+    max_overflow = Application.get_env(:gremlex, :max_overflow) || 10
+    secure = Application.get_env(:gremlex, :secure) || false
+    opts = Application.get_env(:gremlex, :opts) || []
+
+    children = build_app_worker(host, port, path, pool_size, max_overflow, secure, opts)
+
+    # See https://hexdocs.pm/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: Gremlex.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  defp parse_port(nil), do: nil
+
   defp parse_port(port) when is_number(port), do: port
-  defp parse_port(""), do: 8182
-  defp parse_port(:not_set), do: :not_set
 
   defp parse_port(port_string) when is_binary(port_string) do
     case Integer.parse(port_string) do
@@ -20,14 +38,11 @@ defmodule Gremlex.Application do
     end
   end
 
-  defp parse_secure(:not_set), do: false
-  defp parse_secure(is_secure), do: is_secure
-
-  defp build_app_worker(:not_set, :not_set, :not_set, :not_set, :not_set, _) do
+  defp build_app_worker(host, port, _, _, _, _, _) when is_nil(host) or is_nil(port) do
     []
   end
 
-  defp build_app_worker(host, port, path, pool_size, max_overflow, secure) do
+  defp build_app_worker(host, port, path, pool_size, max_overflow, secure, opts) do
     pool_options = [
       name: {:local, :gremlex},
       worker_module: Gremlex.Client,
@@ -35,23 +50,6 @@ defmodule Gremlex.Application do
       max_overflow: max_overflow
     ]
 
-    [:poolboy.child_spec(:gremlex, pool_options, {host, port, path, secure})]
-  end
-
-  def start(_type, _args) do
-    # List all child processes to be supervised
-    host = Application.get_env(:gremlex, :host, :not_set)
-    port = Application.get_env(:gremlex, :port, :not_set) |> parse_port()
-    path = Application.get_env(:gremlex, :path, :not_set)
-    pool_size = Application.get_env(:gremlex, :pool_size, :not_set)
-    max_overflow = Application.get_env(:gremlex, :max_overflow, :not_set)
-    secure = Application.get_env(:gremlex, :secure, :not_set) |> parse_secure()
-
-    children = build_app_worker(host, port, path, pool_size, max_overflow, secure)
-
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Gremlex.Supervisor]
-    Supervisor.start_link(children, opts)
+    [:poolboy.child_spec(:gremlex, pool_options, {host, port, path, secure, opts})]
   end
 end

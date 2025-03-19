@@ -39,7 +39,8 @@ defmodule Gremlex.MixProject do
     [
       {:jason, "~> 1.4"},
       {:poolboy, "~> 1.5.1"},
-      {:socket, "~> 0.3"},
+      {:castore, "~> 1.0"},
+      {:mint_web_socket, "~> 1.0"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:stream_data, "~> 1.0", only: :test}
     ]
