@@ -38,6 +38,7 @@ defmodule Gremlex.Graph do
   @doc """
   Appends an addV command to the traversal.
   Returns a graph to allow chaining.
+  ```
   """
   @spec add_v(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
   def add_v(graph, id) do
@@ -77,7 +78,7 @@ defmodule Gremlex.Graph do
   modifier as parameters.
   Returns a graph to allow chaining.
   """
-  @spec coin(Gremlex.Graph.t(), Float.t()) :: Gremlex.Graph.t()
+  @spec coin(Gremlex.Graph.t(), float()) :: Gremlex.Graph.t()
   def coin(graph, probability) do
     enqueue(graph, "coin", probability)
   end
@@ -221,7 +222,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "V", [id])
   end
 
-  @spec v(Gremlex.Graph.t(), List.t() | String.t()) :: Gremlex.Graph.t()
+  @spec v(Gremlex.Graph.t(), list() | String.t()) :: Gremlex.Graph.t()
   def v(graph, id) do
     enqueue(graph, "V", id)
   end
@@ -231,7 +232,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "inE", [])
   end
 
-  @spec in_e(Gremlex.Graph.t(), String.t() | List.t()) :: Gremlex.Graph.t()
+  @spec in_e(Gremlex.Graph.t(), String.t() | list()) :: Gremlex.Graph.t()
   def in_e(graph, edges) do
     enqueue(graph, "inE", edges)
   end
@@ -241,7 +242,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "outE", [])
   end
 
-  @spec out_e(Gremlex.Graph.t(), String.t() | List.t()) :: Gremlex.Graph.t()
+  @spec out_e(Gremlex.Graph.t(), String.t() | list()) :: Gremlex.Graph.t()
   def out_e(graph, edges) do
     enqueue(graph, "outE", edges)
   end
@@ -251,7 +252,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "out", [])
   end
 
-  @spec out(Gremlex.Graph.t(), String.t() | List.t()) :: Gremlex.Graph.t()
+  @spec out(Gremlex.Graph.t(), String.t() | list()) :: Gremlex.Graph.t()
   def out(graph, labels) do
     enqueue(graph, "out", labels)
   end
@@ -281,7 +282,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "inV", [])
   end
 
-  @spec in_v(Gremlex.Graph.t(), String.t() | List.t()) :: Gremlex.Graph.t()
+  @spec in_v(Gremlex.Graph.t(), String.t() | list()) :: Gremlex.Graph.t()
   def in_v(graph, labels) do
     enqueue(graph, "inV", labels)
   end
@@ -291,7 +292,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "outV", [])
   end
 
-  @spec out_v(Gremlex.Graph.t(), String.t() | List.t()) :: Gremlex.Graph.t()
+  @spec out_v(Gremlex.Graph.t(), String.t() | list()) :: Gremlex.Graph.t()
   def out_v(graph, labels) do
     enqueue(graph, "outV", labels)
   end
@@ -301,7 +302,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "both", [])
   end
 
-  @spec both(Gremlex.Graph.t(), List.t()) :: Gremlex.Graph.t()
+  @spec both(Gremlex.Graph.t(), list()) :: Gremlex.Graph.t()
   def both(graph, labels) when is_list(labels) do
     enqueue(graph, "both", labels)
   end
@@ -316,7 +317,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "bothE", [])
   end
 
-  @spec both_e(Gremlex.Graph.t(), String.t() | List.t()) :: Gremlex.Graph.t()
+  @spec both_e(Gremlex.Graph.t(), String.t() | list()) :: Gremlex.Graph.t()
   def both_e(graph, labels) do
     enqueue(graph, "bothE", labels)
   end
@@ -326,7 +327,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "bothV", [])
   end
 
-  @spec both_v(Gremlex.Graph.t(), List.t() | String.t()) :: Gremlex.Graph.t()
+  @spec both_v(Gremlex.Graph.t(), list() | String.t()) :: Gremlex.Graph.t()
   def both_v(graph, labels) do
     enqueue(graph, "bothV", labels)
   end
@@ -521,7 +522,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "hasId", id)
   end
 
-  @spec has_key(Gremlex.Graph.t(), List.t() | String.t()) :: Gremlex.Graph.t()
+  @spec has_key(Gremlex.Graph.t(), list() | String.t()) :: Gremlex.Graph.t()
   def has_key(graph, key) do
     enqueue(graph, "hasKey", key)
   end
@@ -531,7 +532,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "hasNot", key)
   end
 
-  @spec coalesce(Gremlex.Graph.t(), List.t() | String.t()) :: Gremlex.Graph.t()
+  @spec coalesce(Gremlex.Graph.t(), list() | String.t()) :: Gremlex.Graph.t()
   def coalesce(graph, traversals) do
     enqueue(graph, "coalesce", traversals)
   end
@@ -556,12 +557,12 @@ defmodule Gremlex.Graph do
     enqueue(graph, "unfold", [traversal])
   end
 
-  @spec as(Gremlex.Graph.t(), List.t() | String.t()) :: Gremlex.Graph.t()
+  @spec as(Gremlex.Graph.t(), list() | String.t()) :: Gremlex.Graph.t()
   def as(graph, name) do
     enqueue(graph, "as", name)
   end
 
-  @spec select(Gremlex.Graph.t(), List.t() | String.t()) :: Gremlex.Graph.t()
+  @spec select(Gremlex.Graph.t(), list() | String.t()) :: Gremlex.Graph.t()
   def select(graph, names) do
     enqueue(graph, "select", names)
   end
@@ -571,12 +572,12 @@ defmodule Gremlex.Graph do
     enqueue(graph, "by", [])
   end
 
-  @spec by(Gremlex.Graph.t(), List.t() | String.t()) :: Gremlex.Graph.t()
+  @spec by(Gremlex.Graph.t(), list() | String.t()) :: Gremlex.Graph.t()
   def by(graph, value) do
     enqueue(graph, "by", value)
   end
 
-  @spec by(Gremlex.Graph.t(), List.t() | String.t(), atom()) :: Gremlex.Graph.t()
+  @spec by(Gremlex.Graph.t(), list() | String.t(), atom()) :: Gremlex.Graph.t()
   def by(graph, value, ordering) do
     enqueue(graph, "by", [value, ordering])
   end
@@ -661,7 +662,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "datetime", [iso_date_string])
   end
 
-  @spec union(Gremlex.Graph.t(), List.t()) :: Gremlex.Graph.t()
+  @spec union(Gremlex.Graph.t(), list()) :: Gremlex.Graph.t()
   def union(graph, list) do
     enqueue(graph, "union", list)
   end
@@ -671,7 +672,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "label", [])
   end
 
-  @spec project(Gremlex.Graph.t(), List.t()) :: Gremlex.Graph.t()
+  @spec project(Gremlex.Graph.t(), list()) :: Gremlex.Graph.t()
   def project(graph, list) do
     enqueue(graph, "project", list)
   end
@@ -715,22 +716,22 @@ defmodule Gremlex.Graph do
     enqueue(graph, "choose", [predicate | traversals])
   end
 
-  @spec range(Gremlex.Graph.t(), String.t(), Integer.t(), Integer.t()) :: Gremlex.Graph.t()
+  @spec range(Gremlex.Graph.t(), String.t(), integer(), integer()) :: Gremlex.Graph.t()
   def range(graph, from, to) do
     enqueue(graph, "range", [from, to])
   end
 
-  @spec range(Gremlex.Graph.t(), String.t(), Integer.t(), Integer.t()) :: Gremlex.Graph.t()
+  @spec range(Gremlex.Graph.t(), String.t(), integer(), integer()) :: Gremlex.Graph.t()
   def range(graph, arg, from, to) do
     enqueue(graph, "range", [arg, from, to])
   end
 
-  @spec limit(Gremlex.Graph.t(), Integer.t()) :: Gremlex.Graph.t()
+  @spec limit(Gremlex.Graph.t(), integer()) :: Gremlex.Graph.t()
   def limit(graph, limit) do
     enqueue(graph, "limit", [limit])
   end
 
-  @spec limit(Gremlex.Graph.t(), String.t(), Integer.t()) :: Gremlex.Graph.t()
+  @spec limit(Gremlex.Graph.t(), String.t(), integer()) :: Gremlex.Graph.t()
   def limit(graph, arg, limit) do
     enqueue(graph, "limit", [arg, limit])
   end

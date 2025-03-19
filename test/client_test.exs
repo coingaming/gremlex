@@ -136,7 +136,9 @@ defmodule Gremlex.ClientTests do
       {result, response, error_message} = query("g.addV('person').property('name', )")
       assert result == :error
       assert response == :SCRIPT_EVALUATION_ERROR
-      assert error_message != ""
+
+      assert error_message ==
+               "No signature of method: org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal.property() is applicable for argument types: (String) values: [name]\nPossible solutions: hasProperty(java.lang.String)"
     end
   end
 end
