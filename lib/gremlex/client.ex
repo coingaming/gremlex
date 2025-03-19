@@ -147,7 +147,8 @@ defmodule Gremlex.Client do
 
     case Mint.WebSocket.stream(state.conn, message) do
       {:ok, conn, responses} ->
-        state = put_in(state.conn, conn) |> handle_responses(responses)
+        state = put_in(state.conn, conn)
+        state = Enum.reduce(responses, state, &handle_response/2)
 
         if state.closing? do
           do_close(state)
@@ -174,65 +175,71 @@ defmodule Gremlex.Client do
   end
 
   # Internal functions
-  defp handle_responses(%State{request_ref: ref, websocket: websocket} = state, responses) do
-    Enum.reduce(responses, state, fn response, state ->
-      Logger.debug("Handling response: #{inspect(response)}")
+  defp handle_response({:ping, data} = _response, %State{} = state) do
+    # reply to pings with pongs
+    {:ok, state} = send_frame(state, {:pong, data})
+    state
+  end
 
-      case response do
-        # reply to pings with pongs
-        {:ping, data} ->
-          {:ok, state} = send_frame(state, {:pong, data})
-          state
+  defp handle_response({:pong, data} = _response, %State{} = state) do
+    # reply to pongs with pings
+    {:ok, state} = send_frame(state, {:ping, data})
+    state
+  end
 
-        {:pong, data} ->
-          {:ok, state} = send_frame(state, {:ping, data})
-          state
+  defp handle_response({:close, _code, reason} = _response, %State{} = state) do
+    Logger.debug("Closing connection: #{inspect(reason)}")
+    %{state | closing?: true}
+  end
 
-        {:close, _code, reason} ->
-          Logger.debug("Closing connection: #{inspect(reason)}")
-          %{state | closing?: true}
+  defp handle_response({:status, ref, status} = _response, %State{request_ref: ref} = state) do
+    put_in(state.status, status)
+  end
 
-        {:status, ^ref, status} ->
-          put_in(state.status, status)
+  defp handle_response({:headers, ref, resp_headers}, %State{request_ref: ref} = state) do
+    put_in(state.resp_headers, resp_headers)
+  end
 
-        {:headers, ^ref, resp_headers} ->
-          put_in(state.resp_headers, resp_headers)
+  defp handle_response({:done, ref} = _response, %State{request_ref: ref} = state) do
+    # create a new websocket for the next request
+    case Mint.WebSocket.new(state.conn, ref, state.status, state.resp_headers) do
+      {:ok, conn, websocket} ->
+        Logger.debug("New connection created!")
+        %{state | conn: conn, websocket: websocket, status: nil, resp_headers: nil}
 
-        {:done, ^ref} ->
-          # create a new websocket for the next request
-          case Mint.WebSocket.new(state.conn, ref, state.status, state.resp_headers) do
-            {:ok, conn, websocket} ->
-              Logger.debug("New connection created!")
-              %{state | conn: conn, websocket: websocket, status: nil, resp_headers: nil}
+      {:error, conn, reason} ->
+        Logger.debug("Received error new: #{inspect(reason)}")
+        put_in(state.conn, conn)
+    end
+  end
 
-            {:error, conn, reason} ->
-              Logger.debug("Received error new: #{inspect(reason)}")
-              put_in(state.conn, conn)
-          end
+  defp handle_response(
+         {:data, ref, data} = _response,
+         %State{request_ref: ref, websocket: websocket} = state
+       )
+       when not is_nil(websocket) do
+    case Mint.WebSocket.decode(websocket, data) do
+      {:ok, _websocket, [pong: ""]} ->
+        Logger.debug("Received pong!")
+        state
 
-        {:data, ^ref, data} when not is_nil(websocket) ->
-          case Mint.WebSocket.decode(state.websocket, data) do
-            {:ok, _websocket, [pong: ""]} ->
-              Logger.debug("Received pong!")
-              state
+      {:ok, _websocket, frames} ->
+        Logger.debug("Decoded data: #{inspect(frames)}")
+        put_in(state.websocket, websocket)
 
-            {:ok, _websocket, frames} ->
-              Logger.debug("Decoded data: #{inspect(frames)}")
-              put_in(state.websocket, websocket)
+      {:error, websocket, reason} ->
+        Logger.debug("Decode error: #{inspect(reason)}")
+        put_in(state.websocket, websocket)
+    end
+  end
 
-            {:error, websocket, reason} ->
-              Logger.debug("Decode error: #{inspect(reason)}")
-              put_in(state.websocket, websocket)
-          end
+  defp handle_response({:text, _text} = _response, %State{} = state) do
+    state
+  end
 
-        {:text, _text} ->
-          state
-
-        frame ->
-          Logger.debug("Unexpected frame received: #{inspect(frame)}")
-          state
-      end
-    end)
+  defp handle_response(frame = _response, %State{} = state) do
+    Logger.debug("Unexpected frame received: #{inspect(frame)}")
+    state
   end
 
   defp send_frame(%State{conn: conn, websocket: websocket, request_ref: ref} = state, frame) do
