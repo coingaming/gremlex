@@ -101,7 +101,7 @@ defmodule Gremlex.Client do
 
   @impl GenServer
   def handle_call({:query, query, timeout}, _from, %State{conn: conn} = state) do
-    Logger.info("Processing query: #{inspect(query)}")
+    Logger.debug("Processing query: #{inspect(query)}")
 
     {:ok, conn_p} = Mint.HTTP.set_mode(conn, :passive)
     state = put_in(state.conn, conn_p)
@@ -123,7 +123,7 @@ defmodule Gremlex.Client do
           {{:error, reason}, state}
       end
 
-    Logger.info("Query result: #{inspect(result)}")
+    Logger.debug("Query result: #{inspect(result)}")
 
     {:ok, conn_a} = Mint.HTTP.set_mode(conn, :active)
 
