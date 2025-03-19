@@ -38,7 +38,6 @@ defmodule Gremlex.Graph do
   @doc """
   Appends an addV command to the traversal.
   Returns a graph to allow chaining.
-  ```
   """
   @spec add_v(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
   def add_v(graph, id) do

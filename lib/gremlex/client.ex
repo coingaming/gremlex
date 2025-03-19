@@ -86,7 +86,7 @@ defmodule Gremlex.Client do
            Mint.WebSocket.upgrade(ws_scheme, conn, ws_path, [],
              extensions: [Mint.WebSocket.PerMessageDeflate]
            ) do
-      Logger.info("Connected to: #{http_scheme}://#{host}:#{port} successfully!")
+      Logger.info("Websocket connected successfully!")
 
       schedule_ping()
       {:noreply, %{state | conn: conn, request_ref: ref}}
@@ -114,9 +114,6 @@ defmodule Gremlex.Client do
         {:ok, state} ->
           Logger.debug("Sent query: #{inspect(query)}")
 
-          # Wait for the response
-          # task = Task.async(fn -> recv(state, timeout) end)
-          # result = Task.await(task, timeout)
           {recv(state, timeout), state}
 
         {:error, state, reason} ->
