@@ -197,14 +197,12 @@ defmodule Gremlex.Graph do
   Appends values the `V` command allowing you to select a vertex.
   Returns a graph to allow chaining.
   """
-  @spec v(Gremlex.Graph.t()) :: Gremlex.Graph.t()
-  def v({h, t} = graph) when is_list(h) and is_list(t) do
-    enqueue(graph, "V", [])
-  end
-
-  @spec v(number()) :: Gremlex.Vertex.t()
-  def v(id) do
-    %Gremlex.Vertex{id: id, label: ""}
+  @spec v(Gremlex.Graph.t() | number()) :: Gremlex.Graph.t() | Gremlex.Vertex.t()
+  def v(graph_or_id) do
+    cond do
+      :queue.is_queue(graph_or_id) -> enqueue(graph_or_id, "V", [])
+      is_number(graph_or_id) -> %Gremlex.Vertex{id: graph_or_id, label: ""}
+    end
   end
 
   @spec v(Gremlex.Graph.t(), Gremlex.Vertex.t()) :: Gremlex.Graph.t()
@@ -776,14 +774,18 @@ defmodule Gremlex.Graph do
         %Range{first: first, last: last} ->
           "#{first}..#{last}"
 
-        arg when is_tuple(arg) ->
-          case :queue.is_queue(arg) and :queue.get(arg) do
-            {"V", _} -> encode(arg, "g")
-            _ -> encode(arg, "")
-          end
-
-        str ->
+        str when not is_tuple(str) ->
           "'#{escape(str)}'"
+
+        arg ->
+          if :queue.is_queue(arg) do
+            case :queue.get(arg) do
+              {"V", _} -> encode(arg, "g")
+              _ -> encode(arg, "")
+            end
+          else
+            encode(arg, "")
+          end
       end)
       |> Enum.join(", ")
 

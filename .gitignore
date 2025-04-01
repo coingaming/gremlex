@@ -22,6 +22,10 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 gremlex-*.tar
 
+# Ignore Dialyzer PLT files
+/priv/plts/*.plt
+/priv/plts/*.plt.hash
+
 .elixir_ls
 
 .idea

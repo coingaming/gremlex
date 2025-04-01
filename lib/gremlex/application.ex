@@ -50,6 +50,7 @@ defmodule Gremlex.Application do
       max_overflow: max_overflow
     ]
 
-    [:poolboy.child_spec(:gremlex, pool_options, {host, port, path, secure, opts})]
+    worker_args = [host: host, port: port, path: path, secure: secure, opts: opts]
+    [:poolboy.child_spec(:gremlex, pool_options, worker_args)]
   end
 end

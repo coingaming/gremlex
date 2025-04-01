@@ -13,6 +13,7 @@ defmodule Gremlex.MixProject do
       description: description(),
       package: package(),
       source_url: "https://github.com/coingaming/gremlex",
+      plt_file: {:no_warn, "priv/plts/project.plt"},
       docs: [
         # The main page in the docs
         main: "Gremlex",
