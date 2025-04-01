@@ -46,23 +46,6 @@ jobs:
         path: |
           priv/plts
 
-    # Create PLTs if no cache was found
-    - name: Create PLTs
-      if: steps.plt_cache.outputs.cache-hit != 'true'
-      run: mix dialyzer --plt
-
-    # By default, the GitHub Cache action will only save the cache if all steps in the job succeed,
-    # so we separate the cache restore and save steps in case running dialyzer fails.
-    - name: Save PLT cache
-      id: plt_cache_save
-      uses: actions/cache/save@v3
-      if: steps.plt_cache.outputs.cache-hit != 'true'
-      with:
-        key: |
-          plt-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
-        path: |
-          priv/plts
-
     - name: Build Cache
       uses: actions/cache@v4
       with:
@@ -84,6 +67,23 @@ jobs:
 
     - name: Check Formatting
       run: mix format --check-formatted
+
+    # Create PLTs if no cache was found
+    - name: Create PLTs
+      if: steps.plt_cache.outputs.cache-hit != 'true'
+      run: mix dialyzer --plt
+
+    # By default, the GitHub Cache action will only save the cache if all steps in the job succeed,
+    # so we separate the cache restore and save steps in case running dialyzer fails.
+    - name: Save PLT cache
+      id: plt_cache_save
+      uses: actions/cache/save@v3
+      if: steps.plt_cache.outputs.cache-hit != 'true'
+      with:
+        key: |
+          plt-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}
+        path: |
+          priv/plts
 
     - name: Run dialyzer
       # Two formats are included for ease of debugging and it is lightly recommended to use both, see https://github.com/jeremyjh/dialyxir/issues/530 for reasoning
