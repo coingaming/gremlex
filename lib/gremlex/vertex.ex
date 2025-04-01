@@ -2,10 +2,12 @@ defmodule Gremlex.Vertex do
   alias Gremlex.Vertex
   alias Gremlex.Deserializer
 
-  @type t :: %Gremlex.Vertex{label: String.t(), id: number(), properties: map()}
-  @enforce_keys [:label, :id]
   @derive Jason.Encoder
+
+  @enforce_keys [:label, :id]
   defstruct [:label, :id, :properties]
+
+  @type t :: %__MODULE__{}
 
   def add_properties(%Vertex{properties: nil} = vertex, properties) do
     Map.put(vertex, :properties, properties)

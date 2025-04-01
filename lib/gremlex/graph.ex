@@ -20,7 +20,7 @@ defmodule Gremlex.Graph do
   """
   alias :queue, as: Queue
 
-  @type t :: {[], []}
+  @opaque t :: :queue.queue()
   @default_namespace_property "namespace"
   @default_namespace "gremlex"
 
@@ -169,7 +169,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "valueMap", [])
   end
 
-  @spec value_map(Gremlex.Graph.t(), Boolean.t()) :: Gremlex.Graph.t()
+  @spec value_map(Gremlex.Graph.t(), boolean()) :: Gremlex.Graph.t()
   def value_map(graph, value) when is_boolean(value) do
     enqueue(graph, "valueMap", [value])
   end
