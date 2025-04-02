@@ -18,7 +18,6 @@ defmodule Gremlex.Graph do
   Note: This module doesn't actually execute any queries, it just allows you to build one.
   For query execution see `Gremlex.Client.query/1`
   """
-  alias :queue, as: Queue
 
   @opaque t :: :queue.queue()
   @default_namespace_property "namespace"
@@ -28,11 +27,11 @@ defmodule Gremlex.Graph do
   Start of graph traversal. All graph operations are stored in a queue.
   """
   @spec g :: Gremlex.Graph.t()
-  def g, do: Queue.new()
+  def g, do: :queue.new()
 
   @spec anonymous :: Gremlex.Graph.t()
   def anonymous do
-    enqueue(Queue.new(), "__", [])
+    enqueue(:queue.new(), "__", [])
   end
 
   @doc """
@@ -466,11 +465,11 @@ defmodule Gremlex.Graph do
   end
 
   defp enqueue(graph, op, args) when is_list(args) do
-    Queue.in({op, args}, graph)
+    :queue.in({op, args}, graph)
   end
 
   defp enqueue(graph, op, args) do
-    Queue.in({op, [args]}, graph)
+    :queue.in({op, [args]}, graph)
   end
 
   @doc """
@@ -685,11 +684,11 @@ defmodule Gremlex.Graph do
   ```
   """
   def within(%Range{} = range) do
-    enqueue(Queue.new(), "within", [range])
+    enqueue(:queue.new(), "within", [range])
   end
 
   def within(values) do
-    enqueue(Queue.new(), "within", values)
+    enqueue(:queue.new(), "within", values)
   end
 
   @doc """
@@ -702,11 +701,11 @@ defmodule Gremlex.Graph do
   ```
   """
   def without(%Range{} = range) do
-    enqueue(Queue.new(), "without", [range])
+    enqueue(:queue.new(), "without", [range])
   end
 
   def without(values) do
-    enqueue(Queue.new(), "without", values)
+    enqueue(:queue.new(), "without", values)
   end
 
   @spec choose(Gremlex.Graph.t(), Gremlex.Graph.t(), [Gremlex.Graph.t()]) :: Gremlex.Graph.t()
