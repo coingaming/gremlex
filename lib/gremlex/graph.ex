@@ -197,11 +197,12 @@ defmodule Gremlex.Graph do
   Appends values the `V` command allowing you to select a vertex.
   Returns a graph to allow chaining.
   """
-  @spec v(Gremlex.Graph.t() | number()) :: Gremlex.Graph.t() | Gremlex.Vertex.t()
+  @spec v(Gremlex.Graph.t() | number() | String.t()) :: Gremlex.Graph.t() | Gremlex.Vertex.t()
   def v(graph_or_id) do
     cond do
       :queue.is_queue(graph_or_id) -> enqueue(graph_or_id, "V", [])
       is_number(graph_or_id) -> %Gremlex.Vertex{id: graph_or_id, label: ""}
+      is_binary(graph_or_id) -> %Gremlex.Vertex{id: graph_or_id, label: ""}
     end
   end
 
@@ -334,7 +335,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "dedup", [])
   end
 
-  @spec to(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  @spec to(Gremlex.Graph.t(), String.t() | number() | Gremlex.Vertex.t()) :: Gremlex.Graph.t()
   def to(graph, target) do
     enqueue(graph, "to", [target])
   end
