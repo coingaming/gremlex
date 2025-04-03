@@ -105,7 +105,7 @@ defmodule Gremlex.Graph do
   Appends property command to the traversal.
   Returns a graph to allow chaining.
   """
-  @spec property(Gremlex.Graph.t(), String.t(), any()) :: Gremlex.Graph.t()
+  @spec property(Gremlex.Graph.t(), String.t() | atom(), any()) :: Gremlex.Graph.t()
   def property(graph, key, value) do
     enqueue(graph, "property", [key, value])
   end
@@ -220,7 +220,7 @@ defmodule Gremlex.Graph do
   end
 
   @spec v(Gremlex.Graph.t(), list() | String.t()) :: Gremlex.Graph.t()
-  def v(graph, id) do
+  def v(graph, id) when is_list(id) do
     enqueue(graph, "V", id)
   end
 

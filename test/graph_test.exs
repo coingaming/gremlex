@@ -281,6 +281,13 @@ defmodule Gremlex.GraphTests do
       expected_graph = Queue.in({"V", [1]}, Queue.new())
       assert actual_graph == expected_graph
     end
+
+    test "adds a V function when given a list of ids to the queue" do
+      actual_graph = g() |> v([1, 2])
+      expected_graph = Queue.in({"V", [1, 2]}, Queue.new())
+
+      assert actual_graph == expected_graph
+    end
   end
 
   describe "out_e/1" do
