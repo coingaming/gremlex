@@ -81,10 +81,9 @@ defmodule Gremlex.Graph do
     enqueue(graph, "coin", probability)
   end
 
-  @spec has_label(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
-  def has_label(graph, label) do
-    enqueue(graph, "hasLabel", [label])
-  end
+  @spec has_label(Gremlex.Graph.t(), String.t() | list(String.t())) :: Gremlex.Graph.t()
+  def has_label(graph, label) when is_binary(label), do: enqueue(graph, "hasLabel", [label])
+  def has_label(graph, labels) when is_list(labels), do: enqueue(graph, "hasLabel", labels)
 
   @spec has(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
   def has(graph, key) do
