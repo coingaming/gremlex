@@ -18,9 +18,8 @@ defmodule Gremlex.Graph do
   Note: This module doesn't actually execute any queries, it just allows you to build one.
   For query execution see `Gremlex.Client.query/1`
   """
-  alias :queue, as: Queue
 
-  @type t :: {[], []}
+  @opaque t :: :queue.queue()
   @default_namespace_property "namespace"
   @default_namespace "gremlex"
 
@@ -28,11 +27,11 @@ defmodule Gremlex.Graph do
   Start of graph traversal. All graph operations are stored in a queue.
   """
   @spec g :: Gremlex.Graph.t()
-  def g, do: Queue.new()
+  def g, do: :queue.new()
 
   @spec anonymous :: Gremlex.Graph.t()
   def anonymous do
-    enqueue(Queue.new(), "__", [])
+    enqueue(:queue.new(), "__", [])
   end
 
   @doc """
@@ -82,10 +81,9 @@ defmodule Gremlex.Graph do
     enqueue(graph, "coin", probability)
   end
 
-  @spec has_label(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
-  def has_label(graph, label) do
-    enqueue(graph, "hasLabel", [label])
-  end
+  @spec has_label(Gremlex.Graph.t(), String.t() | list(String.t())) :: Gremlex.Graph.t()
+  def has_label(graph, label) when is_binary(label), do: enqueue(graph, "hasLabel", [label])
+  def has_label(graph, labels) when is_list(labels), do: enqueue(graph, "hasLabel", labels)
 
   @spec has(Gremlex.Graph.t(), any()) :: Gremlex.Graph.t()
   def has(graph, key) do
@@ -106,7 +104,7 @@ defmodule Gremlex.Graph do
   Appends property command to the traversal.
   Returns a graph to allow chaining.
   """
-  @spec property(Gremlex.Graph.t(), String.t(), any()) :: Gremlex.Graph.t()
+  @spec property(Gremlex.Graph.t(), String.t() | atom(), any()) :: Gremlex.Graph.t()
   def property(graph, key, value) do
     enqueue(graph, "property", [key, value])
   end
@@ -169,7 +167,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "valueMap", [])
   end
 
-  @spec value_map(Gremlex.Graph.t(), Boolean.t()) :: Gremlex.Graph.t()
+  @spec value_map(Gremlex.Graph.t(), boolean()) :: Gremlex.Graph.t()
   def value_map(graph, value) when is_boolean(value) do
     enqueue(graph, "valueMap", [value])
   end
@@ -197,14 +195,13 @@ defmodule Gremlex.Graph do
   Appends values the `V` command allowing you to select a vertex.
   Returns a graph to allow chaining.
   """
-  @spec v(Gremlex.Graph.t()) :: Gremlex.Graph.t()
-  def v({h, t} = graph) when is_list(h) and is_list(t) do
-    enqueue(graph, "V", [])
-  end
-
-  @spec v(number()) :: Gremlex.Vertex.t()
-  def v(id) do
-    %Gremlex.Vertex{id: id, label: ""}
+  @spec v(Gremlex.Graph.t() | number() | String.t()) :: Gremlex.Graph.t() | Gremlex.Vertex.t()
+  def v(graph_or_id) do
+    cond do
+      :queue.is_queue(graph_or_id) -> enqueue(graph_or_id, "V", [])
+      is_number(graph_or_id) -> %Gremlex.Vertex{id: graph_or_id, label: ""}
+      is_binary(graph_or_id) -> %Gremlex.Vertex{id: graph_or_id, label: ""}
+    end
   end
 
   @spec v(Gremlex.Graph.t(), Gremlex.Vertex.t()) :: Gremlex.Graph.t()
@@ -222,7 +219,7 @@ defmodule Gremlex.Graph do
   end
 
   @spec v(Gremlex.Graph.t(), list() | String.t()) :: Gremlex.Graph.t()
-  def v(graph, id) do
+  def v(graph, id) when is_list(id) do
     enqueue(graph, "V", id)
   end
 
@@ -336,7 +333,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "dedup", [])
   end
 
-  @spec to(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  @spec to(Gremlex.Graph.t(), String.t() | number() | Gremlex.Vertex.t()) :: Gremlex.Graph.t()
   def to(graph, target) do
     enqueue(graph, "to", [target])
   end
@@ -467,11 +464,11 @@ defmodule Gremlex.Graph do
   end
 
   defp enqueue(graph, op, args) when is_list(args) do
-    Queue.in({op, args}, graph)
+    :queue.in({op, args}, graph)
   end
 
   defp enqueue(graph, op, args) do
-    Queue.in({op, [args]}, graph)
+    :queue.in({op, [args]}, graph)
   end
 
   @doc """
@@ -686,11 +683,11 @@ defmodule Gremlex.Graph do
   ```
   """
   def within(%Range{} = range) do
-    enqueue(Queue.new(), "within", [range])
+    enqueue(:queue.new(), "within", [range])
   end
 
   def within(values) do
-    enqueue(Queue.new(), "within", values)
+    enqueue(:queue.new(), "within", values)
   end
 
   @doc """
@@ -703,11 +700,11 @@ defmodule Gremlex.Graph do
   ```
   """
   def without(%Range{} = range) do
-    enqueue(Queue.new(), "without", [range])
+    enqueue(:queue.new(), "without", [range])
   end
 
   def without(values) do
-    enqueue(Queue.new(), "without", values)
+    enqueue(:queue.new(), "without", values)
   end
 
   @spec choose(Gremlex.Graph.t(), Gremlex.Graph.t(), [Gremlex.Graph.t()]) :: Gremlex.Graph.t()
@@ -776,14 +773,18 @@ defmodule Gremlex.Graph do
         %Range{first: first, last: last} ->
           "#{first}..#{last}"
 
-        arg when is_tuple(arg) ->
-          case :queue.is_queue(arg) and :queue.get(arg) do
-            {"V", _} -> encode(arg, "g")
-            _ -> encode(arg, "")
-          end
-
-        str ->
+        str when not is_tuple(str) ->
           "'#{escape(str)}'"
+
+        arg ->
+          if :queue.is_queue(arg) do
+            case :queue.get(arg) do
+              {"V", _} -> encode(arg, "g")
+              _ -> encode(arg, "")
+            end
+          else
+            encode(arg, "")
+          end
       end)
       |> Enum.join(", ")
 

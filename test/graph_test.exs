@@ -67,11 +67,13 @@ defmodule Gremlex.GraphTests do
     end
   end
 
-  describe "has_label/1" do
+  describe "has_label/2" do
     test "adds a hasLabel function to the queue" do
-      actual_graph = g() |> has_label("foo")
-      expected_graph = Queue.in({"hasLabel", ["foo"]}, Queue.new())
-      assert actual_graph == expected_graph
+      assert "g.V().hasLabel('foo')" == g() |> v() |> has_label("foo") |> encode()
+    end
+
+    test "encodes list of labels" do
+      assert "g.V().hasLabel('foo', 'bar')" == g() |> v() |> has_label(["foo", "bar"]) |> encode()
     end
   end
 
@@ -256,8 +258,7 @@ defmodule Gremlex.GraphTests do
   describe "v/1" do
     test "adds a V function to the queue" do
       actual_graph = g() |> v()
-      expected_graph = Queue.in({"V", []}, Queue.new())
-      assert actual_graph == expected_graph
+      assert "g.V()" == encode(actual_graph)
     end
 
     test "creates a vertex when the id is a number" do
@@ -272,14 +273,18 @@ defmodule Gremlex.GraphTests do
   describe "v/2" do
     test "adds a V function for an id to the queue" do
       actual_graph = g() |> v(1)
-      expected_graph = Queue.in({"V", [1]}, Queue.new())
-      assert actual_graph == expected_graph
+      assert "g.V(1)" == encode(actual_graph)
     end
 
     test "adds a V function when given a vertex to the queue" do
       actual_graph = g() |> v(%Vertex{id: 1, label: "foo"})
       expected_graph = Queue.in({"V", [1]}, Queue.new())
       assert actual_graph == expected_graph
+    end
+
+    test "adds a V function when given a list of ids to the queue" do
+      actual_graph = g() |> v([1, 2])
+      assert "g.V(1, 2)" == encode(actual_graph)
     end
   end
 

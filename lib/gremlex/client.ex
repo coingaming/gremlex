@@ -70,7 +70,13 @@ defmodule Gremlex.Client do
 
   # Callbacks
   @impl GenServer
-  def init({host, port, path, secure, opts}) do
+  def init(args) do
+    host = Keyword.fetch!(args, :host)
+    port = Keyword.fetch!(args, :port)
+    path = Keyword.fetch!(args, :path)
+    secure = Keyword.fetch!(args, :secure)
+    opts = Keyword.fetch!(args, :opts)
+
     Logger.info("Initializing Client...")
 
     {:ok, %State{}, {:continue, {:connect, host, port, path, secure, opts}}}
@@ -243,16 +249,16 @@ defmodule Gremlex.Client do
   end
 
   defp send_frame(%State{conn: conn, websocket: websocket, request_ref: ref} = state, frame) do
-    with {:ok, websocket, data} <- Mint.WebSocket.encode(websocket, frame),
-         {:ok, conn} <- Mint.WebSocket.stream_request_body(conn, ref, data) do
+    with {:ws, {:ok, websocket, data}} <- {:ws, Mint.WebSocket.encode(websocket, frame)},
+         {:conn, {:ok, conn}} <- {:conn, Mint.WebSocket.stream_request_body(conn, ref, data)} do
       Logger.debug("Sending frame: #{inspect(frame)}")
 
       {:ok, %{state | conn: conn, websocket: websocket}}
     else
-      {:error, %Mint.WebSocket{} = websocket, reason} ->
+      {:ws, {:error, websocket, reason}} ->
         {:error, put_in(state.websocket, websocket), reason}
 
-      {:error, conn, reason} ->
+      {:conn, {:error, conn, reason}} ->
         {:error, put_in(state.conn, conn), reason}
     end
   end
@@ -273,7 +279,7 @@ defmodule Gremlex.Client do
          timeout,
          acc \\ []
        ) do
-    with {:ok, conn, [{:data, ^ref, data}]} <- Mint.WebSocket.recv(conn, 0, timeout),
+    with {:ok, conn2, [{:data, ^ref, data}]} <- Mint.WebSocket.recv(conn, 0, timeout),
          {:ok, _websocket, result} <- Mint.WebSocket.decode(websocket, data) do
       case result do
         [{:text, query_result}] ->
@@ -290,7 +296,7 @@ defmodule Gremlex.Client do
               {:ok, []}
 
             206 ->
-              recv(conn, timeout, acc ++ result)
+              recv(Map.put(state, :conn, conn2), timeout, acc ++ result)
 
             401 ->
               {:error, :UNAUTHORIZED, error_message}
