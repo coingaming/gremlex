@@ -1102,6 +1102,13 @@ defmodule Gremlex.GraphTests do
       expected_graph = Queue.in({"emit", [has_label_part]}, Queue.new())
       assert actual_graph == expected_graph
     end
+
+    test "adds a plain emit to the queue" do
+      graph = g() |> v(1) |> repeat(g() |> out("2")) |> times(3) |> emit() |> simple_path()
+      expected = "g.V(1).repeat(out('2')).times(3).emit().simplePath()"
+
+      assert expected == encode(graph)
+    end
   end
 
   describe "times/2" do

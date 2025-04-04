@@ -598,6 +598,11 @@ defmodule Gremlex.Graph do
     enqueue(graph, "repeat", [traversal])
   end
 
+  @spec emit(Gremlex.Graph.t()) :: Gremlex.Graph.t()
+  def emit(graph) do
+    enqueue(graph, "emit", [])
+  end
+
   @spec emit(Gremlex.Graph.t(), Gremlex.Graph.t()) :: Gremlex.Graph.t()
   def emit(graph, traversal) do
     enqueue(graph, "emit", [traversal])
