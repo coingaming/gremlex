@@ -679,6 +679,26 @@ defmodule Gremlex.Graph do
   end
 
   @doc """
+  Appends `sideEffect` command to the traversal.
+
+  The side effect is a way to store the result of a traversal in a key
+  that can be used later in the traversal. It is similar to a variable
+  that can be used to store intermediate results.
+
+  Example:
+  ```
+  g.V()
+    .hasLabel('Product')
+    .has('price', gt(100))
+    .sideEffect(__.property('discounted', true))
+  ```
+  """
+  @spec side_effect(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  def side_effect(graph, key) do
+    enqueue(graph, "sideEffect", [key])
+  end
+
+  @doc """
   Creates a `within` predicate that will match at least one of the values provided.
   Takes in a range or a list as the values.
   Examples:

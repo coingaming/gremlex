@@ -141,4 +141,48 @@ defmodule Gremlex.ClientTests do
                "No signature of method: org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal.property() is applicable for argument types: (String) values: [name]\nPossible solutions: hasProperty(java.lang.String)"
     end
   end
+
+  describe "side_effect/2" do
+    test "allows you to set a side effect on vertex" do
+      {_, [_tshirt]} = g() |> add_v("tshirt") |> property("price", 60) |> query()
+      {_, [_hat]} = g() |> add_v("hat") |> property("price", 70) |> query()
+      {_, [_socks]} = g() |> add_v("socks") |> property("price", 20) |> query()
+      {_, [hoodie]} = g() |> add_v("hoodie") |> property("price", 200) |> query()
+      {_, [bag]} = g() |> add_v("bag") |> property("price", 101) |> query()
+
+      # """
+      # g.V()
+      # .has('price', gt(#{@price_threshold}))
+      # .sideEffect(__.property('discounted', true))
+      # .fold()
+      # .as('discounted')
+      # .project('count', 'ids')
+      #   .by(__.unfold().count())
+      #   .by(__.unfold().id().fold())
+      # .toList()
+      # """
+
+      {:ok, [%{"count" => count, "products" => products}] = _response} =
+        g()
+        |> v()
+        |> has("price", gt(g(), 100))
+        |> side_effect(anonymous() |> property("discounted", "true"))
+        |> fold()
+        |> as("discounted")
+        |> project(["count", "products"])
+        |> by(anonymous() |> unfold() |> count())
+        |> by(anonymous() |> unfold() |> fold())
+        |> to_list()
+        |> query()
+
+      assert count == 2
+      assert Enum.count(products) == 2
+
+      assert Enum.all?(products, fn x ->
+               x.id in [bag.id, hoodie.id] and
+                 x.properties.price in [[200], [101]] &&
+                 x.properties.discounted == ["true"]
+             end)
+    end
+  end
 end
