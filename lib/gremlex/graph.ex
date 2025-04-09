@@ -485,9 +485,13 @@ defmodule Gremlex.Graph do
     enqueue(graph, "E", [id])
   end
 
-  @spec e(Gremlex.Graph.t(), number | String.t()) :: Gremlex.Graph.t()
+  @spec e(Gremlex.Graph.t(), number | String.t() | list(String.t())) :: Gremlex.Graph.t()
   def e(graph, id) when is_number(id) or is_binary(id) do
     enqueue(graph, "E", [id])
+  end
+
+  def e(graph, ids) when is_list(ids) do
+    enqueue(graph, "E", ids)
   end
 
   @doc """
