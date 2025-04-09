@@ -693,7 +693,7 @@ defmodule Gremlex.Graph do
     .sideEffect(__.property('discounted', true))
   ```
   """
-  @spec side_effect(Gremlex.Graph.t(), String.t()) :: Gremlex.Graph.t()
+  @spec side_effect(t(), t() | String.t()) :: t()
   def side_effect(graph, key) do
     enqueue(graph, "sideEffect", [key])
   end
