@@ -1150,4 +1150,15 @@ defmodule Gremlex.GraphTests do
       assert actual_graph == expected_graph
     end
   end
+
+  describe "side_effect/2" do
+    test "adds side_effect to the query" do
+      assert "g.V().has('price', gt(100)).sideEffect(__.property('discounted', 'true'))" ==
+               g()
+               |> v()
+               |> has("price", g() |> gt(100))
+               |> side_effect(anonymous() |> Graph.property("discounted", "true"))
+               |> encode()
+    end
+  end
 end
