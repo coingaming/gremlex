@@ -803,6 +803,14 @@ defmodule Gremlex.GraphTests do
       expected_graph = Queue.in({"E", []}, Queue.new())
       assert actual_graph == expected_graph
     end
+
+    test "adds an E function with multiple ids" do
+      graph = g() |> e(["1", "2"])
+
+      expected = "g.E('1', '2')"
+
+      assert encode(graph) == expected
+    end
   end
 
   describe "e/2 with number" do
