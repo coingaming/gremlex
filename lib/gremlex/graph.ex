@@ -572,7 +572,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "by", [])
   end
 
-  @spec by(Gremlex.Graph.t(), list() | String.t()) :: Gremlex.Graph.t()
+  @spec by(Gremlex.Graph.t(), list() | String.t() | Gremlex.Graph.t()) :: Gremlex.Graph.t()
   def by(graph, value) do
     enqueue(graph, "by", value)
   end
