@@ -1,4 +1,4 @@
-defmodule Gremlex.Long do
+defmodule Gremlex.LongType do
   @moduledoc """
   A module for handling long integers. Relevant for quering gremlin-groovy long values.
 
@@ -19,6 +19,6 @@ defmodule Gremlex.Long do
   """
   @spec new(integer()) :: t()
   def new(value) when is_integer(value) do
-    %Gremlex.Long{value: value}
+    %__MODULE__{value: value}
   end
 end

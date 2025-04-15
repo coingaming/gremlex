@@ -805,7 +805,7 @@ defmodule Gremlex.Graph do
         str when not is_tuple(str) ->
           "'#{escape(str)}'"
 
-        %Gremlex.Long{value: value} ->
+        %Gremlex.LongType{value: value} ->
           "#{escape(value)}L"
 
         arg ->
