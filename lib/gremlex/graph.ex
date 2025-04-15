@@ -805,6 +805,9 @@ defmodule Gremlex.Graph do
         str when not is_tuple(str) ->
           "'#{escape(str)}'"
 
+        %Gremlex.Long{value: value} ->
+          "#{escape(value)}L"
+
         arg ->
           if :queue.is_queue(arg) do
             case :queue.get(arg) do
