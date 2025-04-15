@@ -1,7 +1,10 @@
 defmodule Gremlex.Long do
   @moduledoc """
-  A module for handling long integers. Relevant for quering gremlin-groovy long values like
-  g.E(123L). 
+  A module for handling long integers. Relevant for quering gremlin-groovy long values.
+
+  Example
+    g.e(long.new(123))
+    # => g.E(123L)
   """
 
   @type t :: %__MODULE__{
