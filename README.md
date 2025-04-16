@@ -16,7 +16,7 @@ Install from Hex.pm:
 ```elixir
 def deps do
   [
-    {:gremlex, "~> 0.4.0"}
+    {:gremlex, "~> 0.4.1"}
   ]
 end
 ```
