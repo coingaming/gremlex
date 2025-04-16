@@ -1,3 +1,8 @@
+## 0.4.1 [2025-04-16]
+
+### Fixes
+- `@spec` in `Gremlex.Graph.by/2` and `Gremlex.Graph.by/3`
+
 ## 0.4.0
 
 ### Added
