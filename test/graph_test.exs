@@ -1135,6 +1135,14 @@ defmodule Gremlex.GraphTests do
     end
   end
 
+  describe "gte/2" do
+    test "adds a gte function to the queue" do
+      actual_graph = g() |> gte(3)
+      expected_graph = Queue.in({"gte", [3]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
   describe "lt/2" do
     test "adds a lt function to the queue" do
       actual_graph = g() |> lt(3)
