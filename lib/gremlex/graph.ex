@@ -642,6 +642,11 @@ defmodule Gremlex.Graph do
     enqueue(graph, "gt", [number])
   end
 
+  @spec gte(Gremlex.Graph.t(), number()) :: Gremlex.Graph.t()
+  def gte(graph, number) do
+    enqueue(graph, "gte", [number])
+  end
+
   @spec lt(Gremlex.Graph.t(), number()) :: Gremlex.Graph.t()
   def lt(graph, number) do
     enqueue(graph, "lt", [number])
