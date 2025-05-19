@@ -1,3 +1,8 @@
+## 0.4.2 [2025-05-19]
+
+### Added
+- function `Gremlex.Graph.gte/2` similar to `Gremlex.Graph.gt/2`
+
 ## 0.4.1 [2025-04-16]
 
 ### Fixes
