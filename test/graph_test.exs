@@ -1137,8 +1137,8 @@ defmodule Gremlex.GraphTests do
 
   describe "gte/2" do
     test "adds a gte function to the queue" do
-      actual_graph = g() |> v() |> has("price", g() |> gt(100)) |> encode()
-      expected_graph = "g.V().has('price', gt(100))"
+      actual_graph = g() |> v() |> has("price", g() |> gte(100)) |> encode()
+      expected_graph = "g.V().has('price', gte(100))"
       assert actual_graph == expected_graph
     end
   end
