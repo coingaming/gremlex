@@ -1,3 +1,8 @@
+## 0.4.3 [2025-06-05]
+
+### Fixes
+- Increase default timeout from 5s to 30s to match Gremlin's default `evaluationTimeout`
+
 ## 0.4.2 [2025-05-19]
 
 ### Added
