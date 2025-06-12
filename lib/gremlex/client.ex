@@ -52,10 +52,10 @@ defmodule Gremlex.Client do
 
   Params:
   * query - A `Gremlex.Graph.t` or raw String query
-  * timeout (Default: 5000ms) - Timeout in milliseconds to pass to GenServer and Task.await call
+  * timeout (Default: 30000ms) - Timeout in milliseconds to pass to GenServer and Task.await call
   """
   @spec query(Gremlex.Graph.t() | String.t(), number() | :infinity) :: response
-  def query(query, timeout \\ 5000) do
+  def query(query, timeout \\ 30_000) do
     :poolboy.transaction(
       :gremlex,
       fn worker_pid -> GenServer.call(worker_pid, {:query, query, timeout}, timeout) end,
@@ -255,11 +255,8 @@ defmodule Gremlex.Client do
 
       {:ok, %{state | conn: conn, websocket: websocket}}
     else
-      {:ws, {:error, websocket, reason}} ->
-        {:error, put_in(state.websocket, websocket), reason}
-
-      {:conn, {:error, conn, reason}} ->
-        {:error, put_in(state.conn, conn), reason}
+      {:ws, {:error, websocket, reason}} -> {:error, put_in(state.websocket, websocket), reason}
+      {:conn, {:error, conn, reason}} -> {:error, put_in(state.conn, conn), reason}
     end
   end
 
@@ -289,35 +286,16 @@ defmodule Gremlex.Client do
           error_message = response["status"]["message"]
           # Continue to block until we receive a 200 status code
           case status do
-            200 ->
-              {:ok, acc ++ result}
-
-            204 ->
-              {:ok, []}
-
-            206 ->
-              recv(Map.put(state, :conn, conn2), timeout, acc ++ result)
-
-            401 ->
-              {:error, :UNAUTHORIZED, error_message}
-
-            409 ->
-              {:error, :MALFORMED_REQUEST, error_message}
-
-            499 ->
-              {:error, :INVALID_REQUEST_ARGUMENTS, error_message}
-
-            500 ->
-              {:error, :SERVER_ERROR, error_message}
-
-            597 ->
-              {:error, :SCRIPT_EVALUATION_ERROR, error_message}
-
-            598 ->
-              {:error, :SERVER_TIMEOUT, error_message}
-
-            599 ->
-              {:error, :SERVER_SERIALIZATION_ERROR, error_message}
+            200 -> {:ok, acc ++ result}
+            204 -> {:ok, []}
+            206 -> recv(Map.put(state, :conn, conn2), timeout, acc ++ result)
+            401 -> {:error, :UNAUTHORIZED, error_message}
+            409 -> {:error, :MALFORMED_REQUEST, error_message}
+            499 -> {:error, :INVALID_REQUEST_ARGUMENTS, error_message}
+            500 -> {:error, :SERVER_ERROR, error_message}
+            597 -> {:error, :SCRIPT_EVALUATION_ERROR, error_message}
+            598 -> {:error, :SERVER_TIMEOUT, error_message}
+            599 -> {:error, :SERVER_SERIALIZATION_ERROR, error_message}
           end
 
         [{:ping, _}] ->
