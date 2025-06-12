@@ -1,3 +1,8 @@
+## 0.4.3 [2025-06-12]
+
+### Added
+- function `Gremlex.Graph.neq/2` similar to `Gremlex.Graph.eq/2`
+
 ## 0.4.2 [2025-05-19]
 
 ### Added

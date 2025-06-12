@@ -1021,6 +1021,14 @@ defmodule Gremlex.GraphTests do
     end
   end
 
+  describe "neq/2" do
+    test "adds a neq function to the queue" do
+      actual_graph = g() |> neq(1)
+      expected_graph = Queue.in({"neq", [1]}, Queue.new())
+      assert actual_graph == expected_graph
+    end
+  end
+
   describe "where/2" do
     test "adds a where function to the queue" do
       actual_graph = g() |> where("foo")
