@@ -1023,8 +1023,13 @@ defmodule Gremlex.GraphTests do
 
   describe "neq/2" do
     test "adds a neq function to the queue" do
-      actual_graph = g() |> neq(1)
-      expected_graph = Queue.in({"neq", [1]}, Queue.new())
+      actual_graph =
+        g()
+        |> v()
+        |> where(g() |> neq("start"))
+        |> encode()
+
+      expected_graph = "g.V().where(neq('start'))"
       assert actual_graph == expected_graph
     end
   end
