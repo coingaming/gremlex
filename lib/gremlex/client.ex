@@ -298,6 +298,10 @@ defmodule Gremlex.Client do
             599 -> {:error, :SERVER_SERIALIZATION_ERROR, error_message}
           end
 
+        [{:pong, _}] ->
+          # No need to schedule :ping messages since they are periodically scheduled
+          :ok
+
         [{:ping, _}] ->
           # Keep the connection alive
           send_frame(state, {:pong, ""})
