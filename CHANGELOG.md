@@ -1,3 +1,12 @@
+## Unreleased
+
+### Added
+- Add `with` configuration, as `with_` function, to graph traversal
+- Add `neq` function to graph traversal
+
+### Fixes
+- Properly handle `:pong` response for long-lived requests
+
 ## 0.4.3 [2025-06-05]
 
 ### Fixes
