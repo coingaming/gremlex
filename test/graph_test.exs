@@ -1172,6 +1172,24 @@ defmodule Gremlex.GraphTests do
     end
   end
 
+  describe "with_/3" do
+    test "adds a with configuration step at the beginning of the traversal" do
+      query = g() |> with_("providerDefinedVariable", true) |> v(1) |> encode()
+
+      expected_query = "g.with('providerDefinedVariable', true).V(1)"
+
+      assert expected_query == query
+    end
+
+    test "adds multiple configuration steps" do
+      query = g() |> with_("customValue1", 1) |> with_("customValue2", false) |> v(1) |> encode()
+
+      expected_query = "g.with('customValue1', 1).with('customValue2', false).V(1)"
+
+      assert expected_query == query
+    end
+  end
+
   describe "side_effect/2" do
     test "adds side_effect to the query" do
       assert "g.V().has('price', gt(100)).sideEffect(__.property('discounted', 'true'))" ==

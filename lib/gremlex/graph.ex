@@ -495,6 +495,14 @@ defmodule Gremlex.Graph do
   end
 
   @doc """
+  Adds a with configuration step
+  """
+  @spec with_(t(), String.t(), any()) :: t()
+  def with_(graph, key, value) do
+    enqueue(graph, "with", [key, value])
+  end
+
+  @doc """
   Adds a namespace as property
   """
   @spec add_namespace(Gremlex.Graph.t()) :: Gremlex.Graph.t()
