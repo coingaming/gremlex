@@ -1,10 +1,13 @@
 ## Unreleased
 
+## 0.4.5 [2025-07-14]
+
 ### Added
 - Add `with` configuration, as `with_` function, to graph traversal
 
 ### Fixes
 - Properly handle `:pong` response for long-lived requests
+- Support for multiple responses blocks in a single websocket response
 
 ## 0.4.4 [2025-06-12]
 

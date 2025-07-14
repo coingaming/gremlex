@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/coingaming/gremlex/actions/workflows/ci.yaml/badge.svg)](https://github.com/coingaming/gremlex/actions/workflows/ci.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/hexpm/v/gremlex.svg)](https://hex.pm/packages/gremlex)
+[![Docs](https://img.shields.io/badge/documentation-gray.svg)](https://hexdocs.pm/gremlex)
 
 # Gremlex
 
@@ -16,7 +18,7 @@ Install from Hex.pm:
 ```elixir
 def deps do
   [
-    {:gremlex, "~> 0.4.4"}
+    {:gremlex, "~> 0.4.5"}
   ]
 end
 ```
