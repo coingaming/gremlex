@@ -278,35 +278,60 @@ defmodule Gremlex.Client do
        ) do
     with {:ok, conn2, [{:data, ^ref, data}]} <- Mint.WebSocket.recv(conn, 0, timeout),
          {:ok, _websocket, result} <- Mint.WebSocket.decode(websocket, data) do
-      case result do
-        [{:text, query_result}] ->
-          response = Jason.decode!(query_result)
-          result = Deserializer.deserialize(response)
-          status = response["status"]["code"]
-          error_message = response["status"]["message"]
-          # Continue to block until we receive a 200 status code
-          case status do
-            200 -> {:ok, acc ++ result}
-            204 -> {:ok, []}
-            206 -> recv(Map.put(state, :conn, conn2), timeout, acc ++ result)
-            401 -> {:error, :UNAUTHORIZED, error_message}
-            409 -> {:error, :MALFORMED_REQUEST, error_message}
-            499 -> {:error, :INVALID_REQUEST_ARGUMENTS, error_message}
-            500 -> {:error, :SERVER_ERROR, error_message}
-            597 -> {:error, :SCRIPT_EVALUATION_ERROR, error_message}
-            598 -> {:error, :SERVER_TIMEOUT, error_message}
-            599 -> {:error, :SERVER_SERIALIZATION_ERROR, error_message}
-          end
+      handle_decoded_response(state, result, conn2, timeout, acc)
+    end
+  end
 
-        [{:pong, _}] ->
-          # No need to schedule :ping messages since they are periodically scheduled
-          :ok
+  # No need to schedule ping message again since they are periodically scheduled
+  defp handle_decoded_response(_state, [{:pong, _}], _conn, _timeout, _acc) do
+    :ok
+  end
 
-        [{:ping, _}] ->
-          # Keep the connection alive
-          send_frame(state, {:pong, ""})
-          :ok
-      end
+  # Keep the connection alive
+  defp handle_decoded_response(state, [{:ping, _}], _conn, _timeout, _acc) do
+    send_frame(state, {:pong, ""})
+  end
+
+  # Single block response
+  defp handle_decoded_response(state, [{:text, query_result}], conn, timeout, acc) do
+    response = Jason.decode!(query_result)
+    result = Deserializer.deserialize(response)
+    status = response["status"]["code"]
+    error_message = response["status"]["message"]
+    # Continue to block until we receive a 200 status code
+    case status do
+      200 -> {:ok, acc ++ result}
+      204 -> {:ok, []}
+      206 -> recv(Map.put(state, :conn, conn), timeout, acc ++ result)
+      401 -> {:error, :UNAUTHORIZED, error_message}
+      409 -> {:error, :MALFORMED_REQUEST, error_message}
+      499 -> {:error, :INVALID_REQUEST_ARGUMENTS, error_message}
+      500 -> {:error, :SERVER_ERROR, error_message}
+      597 -> {:error, :SCRIPT_EVALUATION_ERROR, error_message}
+      598 -> {:error, :SERVER_TIMEOUT, error_message}
+      599 -> {:error, :SERVER_SERIALIZATION_ERROR, error_message}
+    end
+  end
+
+  # Multiple block response. In some cases we can receive a single response
+  # containing multiple 206 blocks and a final 200 block
+  defp handle_decoded_response(state, [{:text, _} | _rest] = response, conn, timeout, acc) do
+    responses = response |> Keyword.get_values(:text) |> Enum.map(&Jason.decode!/1)
+    statuses = MapSet.new(responses, & &1["status"]["code"])
+    results = Enum.map(responses, &Deserializer.deserialize/1)
+    error_message = Enum.map_join(responses, ", ", & &1["status"]["error_message"])
+
+    cond do
+      200 in statuses -> {:ok, acc ++ results}
+      204 in statuses -> {:ok, []}
+      206 in statuses -> recv(Map.put(state, :conn, conn), timeout, acc ++ results)
+      401 in statuses -> {:error, :UNAUTHORIZED, error_message}
+      409 in statuses -> {:error, :MALFORMED_REQUEST, error_message}
+      499 in statuses -> {:error, :INVALID_REQUEST_ARGUMENTS, error_message}
+      500 in statuses -> {:error, :SERVER_ERROR, error_message}
+      597 in statuses -> {:error, :SCRIPT_EVALUATION_ERROR, error_message}
+      598 in statuses -> {:error, :SERVER_TIMEOUT, error_message}
+      599 in statuses -> {:error, :SERVER_SERIALIZATION_ERROR, error_message}
     end
   end
 
