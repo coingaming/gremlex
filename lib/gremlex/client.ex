@@ -292,7 +292,7 @@ defmodule Gremlex.Client do
     send_frame(state, {:pong, ""})
   end
 
-  defp handle_decoded_response(state, [{:text, _} = _rest] = response, conn, timeout, acc) do
+  defp handle_decoded_response(state, [{:text, _} | _rest] = response, conn, timeout, acc) do
     responses = response |> Keyword.get_values(:text) |> Enum.map(&Jason.decode!/1)
     results = Enum.map(responses, &Deserializer.deserialize/1)
     status = responses |> Enum.map(& &1["status"]["code"]) |> Enum.min()
