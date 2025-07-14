@@ -185,4 +185,75 @@ defmodule Gremlex.ClientTests do
              end)
     end
   end
+
+  describe "handle_decoded_response/5" do
+    setup do
+      %{state: %Gremlex.Client.State{}}
+    end
+
+    test "returns ok for pong message", %{state: state} do
+      timeout = 5_000
+      conn = nil
+      acc = []
+
+      assert :ok == Gremlex.Client.handle_decoded_response(state, [pong: " "], conn, timeout, acc)
+    end
+
+    test "returns empty list for 204 response", %{state: state} do
+      timeout = 5_000
+      conn = nil
+      acc = []
+
+      response =
+        "{\"requestId\":\"d71696f1-19da-4ec3-9701-b3d427e05411\",\"status\":{\"message\":\"\",\"code\":204,\"attributes\":{\"@type\":\"g:Map\",\"@value\":[\"host\",\"/192.168.0.1:12345\"]}},\"result\":{\"data\":null,\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}}}"
+
+      assert {:ok, []} ==
+               Gremlex.Client.handle_decoded_response(
+                 state,
+                 [text: response],
+                 conn,
+                 timeout,
+                 acc
+               )
+    end
+
+    test "returns decoded response for 200 status", %{state: state} do
+      timeout = 5_000
+      conn = nil
+      acc = []
+
+      response =
+        "{\"requestId\":\"01df1ca0-677d-4b6f-b592-22b2a34899ad\",\"status\":{\"message\":\"\",\"code\":200,\"attributes\":{\"@type\":\"g:Map\",\"@value\":[\"host\",\"/192.168.0.1:12345\"]}},\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[\"0\"]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}}}"
+
+      assert {:ok, ["0"]} ==
+               Gremlex.Client.handle_decoded_response(
+                 state,
+                 [text: response],
+                 conn,
+                 timeout,
+                 acc
+               )
+    end
+
+    test "returns single list for multipart response", %{state: state} do
+      timeout = 5_000
+      conn = nil
+      acc = []
+
+      response =
+        [
+          text:
+            "{\"requestId\":\"38625c21-3a26-43ce-87da-ad296933561e\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id1\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id2\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
+          text:
+            "{\"requestId\":\"38625c21-3a26-43ce-87da-ad296933561e\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id2\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id1\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":200,\"message\":\"\"}}"
+        ]
+
+      assert {:ok,
+              [
+                %{"id" => "id1", "linked" => ["id2"], "label" => "VERTEX"},
+                %{"id" => "id2", "linked" => ["id1"], "label" => "VERTEX"}
+              ]} ==
+               Gremlex.Client.handle_decoded_response(state, response, conn, timeout, acc)
+    end
+  end
 end
