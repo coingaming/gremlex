@@ -283,17 +283,17 @@ defmodule Gremlex.Client do
   end
 
   # No need to schedule ping message again since they are periodically scheduled
-  defp handle_decoded_response(_state, [{:pong, _}], _conn, _timeout, _acc) do
+  def handle_decoded_response(_state, [{:pong, _}], _conn, _timeout, _acc) do
     :ok
   end
 
   # Keep the connection alive
-  defp handle_decoded_response(state, [{:ping, _}], _conn, _timeout, _acc) do
+  def handle_decoded_response(state, [{:ping, _}], _conn, _timeout, _acc) do
     send_frame(state, {:pong, ""})
   end
 
   # Single block response
-  defp handle_decoded_response(state, [{:text, query_result}], conn, timeout, acc) do
+  def handle_decoded_response(state, [{:text, query_result}], conn, timeout, acc) do
     response = Jason.decode!(query_result)
     result = Deserializer.deserialize(response)
     status = response["status"]["code"]
@@ -315,10 +315,10 @@ defmodule Gremlex.Client do
 
   # Multiple block response. In some cases we can receive a single response
   # containing multiple 206 blocks and a final 200 block
-  defp handle_decoded_response(state, [{:text, _} | _rest] = response, conn, timeout, acc) do
+  def handle_decoded_response(state, [{:text, _} | _rest] = response, conn, timeout, acc) do
     responses = response |> Keyword.get_values(:text) |> Enum.map(&Jason.decode!/1)
     statuses = MapSet.new(responses, & &1["status"]["code"])
-    results = Enum.map(responses, &Deserializer.deserialize/1)
+    results = Enum.flat_map(responses, &Deserializer.deserialize/1)
     error_message = Enum.map_join(responses, ", ", & &1["status"]["error_message"])
 
     cond do

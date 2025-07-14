@@ -1,6 +1,11 @@
 ## Unreleased
 
-## 0.4.5 [2025-07-14]
+## 0.4.6 [2025-07-14]
+
+### Fixes
+- Fix wrong deserialization in response with multiple `text` blocks
+
+## 0.4.5 [2025-07-14] (BROKEN!)
 
 ### Added
 - Add `with` configuration, as `with_` function, to graph traversal
