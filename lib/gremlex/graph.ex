@@ -570,7 +570,7 @@ defmodule Gremlex.Graph do
     enqueue(graph, "as", name)
   end
 
-  @spec select(Gremlex.Graph.t(), list() | String.t()) :: Gremlex.Graph.t()
+  @spec select(Gremlex.Graph.t(), list() | String.t() | atom()) :: Gremlex.Graph.t()
   def select(graph, names) do
     enqueue(graph, "select", names)
   end
