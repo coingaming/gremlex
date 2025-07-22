@@ -140,6 +140,23 @@ defmodule Gremlex.ClientTests do
       assert error_message ==
                "No signature of method: org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal.property() is applicable for argument types: (String) values: [name]\nPossible solutions: hasProperty(java.lang.String)"
     end
+
+    # COMMENT IT OUT IF CHECK IS NO LONGER NEEDED
+    @tag timeout: :infinity
+    test "query can perform even if it exceeds default timeout" do
+      # some heavy query
+      result =
+        g()
+        |> with_("evaluationTimeout", 0)
+        |> add_v("foo")
+        |> as("f")
+        |> repeat(g() |> add_v("bar") |> add_e("link") |> from("f"))
+        |> times(7500)
+        |> query(:infinity)
+
+      refute result ==
+               {:error, :SERVER_TIMEOUT, "Evaluation exceeded timeout threshold of 30000 ms"}
+    end
   end
 
   describe "side_effect/2" do
