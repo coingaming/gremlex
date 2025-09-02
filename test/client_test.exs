@@ -191,14 +191,6 @@ defmodule Gremlex.ClientTests do
       %{state: %Gremlex.Client.State{}}
     end
 
-    test "returns ok for pong message", %{state: state} do
-      timeout = 5_000
-      conn = nil
-      acc = []
-
-      assert :ok == Gremlex.Client.handle_decoded_response(state, [pong: " "], conn, timeout, acc)
-    end
-
     test "returns empty list for 204 response", %{state: state} do
       timeout = 5_000
       conn = nil
@@ -244,6 +236,30 @@ defmodule Gremlex.ClientTests do
         [
           text:
             "{\"requestId\":\"38625c21-3a26-43ce-87da-ad296933561e\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id1\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id2\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
+          text:
+            "{\"requestId\":\"38625c21-3a26-43ce-87da-ad296933561e\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id2\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id1\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":200,\"message\":\"\"}}"
+        ]
+
+      assert {:ok,
+              [
+                %{"id" => "id1", "linked" => ["id2"], "label" => "VERTEX"},
+                %{"id" => "id2", "linked" => ["id1"], "label" => "VERTEX"}
+              ]} ==
+               Gremlex.Client.handle_decoded_response(state, response, conn, timeout, acc)
+    end
+
+    test "returns single list for multipart response with handling pong messages", %{
+      state: state
+    } do
+      timeout = 5_000
+      conn = nil
+      acc = []
+
+      response =
+        [
+          text:
+            "{\"requestId\":\"38625c21-3a26-43ce-87da-ad296933561e\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id1\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id2\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
+          pong: " ",
           text:
             "{\"requestId\":\"38625c21-3a26-43ce-87da-ad296933561e\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id2\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id1\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":200,\"message\":\"\"}}"
         ]
