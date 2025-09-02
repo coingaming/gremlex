@@ -283,13 +283,14 @@ defmodule Gremlex.Client do
   end
 
   # No need to schedule ping message again since they are periodically scheduled
-  def handle_decoded_response(_state, [{:pong, _}], _conn, _timeout, _acc) do
-    :ok
+  def handle_decoded_response(state, [{:pong, _}], _conn, timeout, acc) do
+    recv(state, timeout, acc)
   end
 
   # Keep the connection alive
-  def handle_decoded_response(state, [{:ping, _}], _conn, _timeout, _acc) do
-    send_frame(state, {:pong, ""})
+  def handle_decoded_response(state, [{:ping, _}], _conn, timeout, acc) do
+    {:ok, state} = send_frame(state, {:pong, ""})
+    recv(state, timeout, acc)
   end
 
   # Single block response
@@ -336,6 +337,7 @@ defmodule Gremlex.Client do
   end
 
   defp schedule_ping do
-    Process.send_after(self(), :ping, 30_000)
+    # TODO: Revert once tested on test envs
+    Process.send_after(self(), :ping, 500)
   end
 end
