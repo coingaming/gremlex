@@ -37,13 +37,24 @@ defmodule Gremlex.Client do
     @type t :: %__MODULE__{
             conn: Mint.HTTP.t(),
             request_ref: Mint.Types.request_ref(),
+            request_id: String.t() | nil,
             caller: pid(),
             websocket: Mint.WebSocket.t(),
             status: Mint.Types.status(),
             resp_headers: Mint.Types.headers(),
             closing?: boolean()
           }
-    defstruct [:conn, :websocket, :request_ref, :caller, :status, :resp_headers, :closing?]
+
+    defstruct [
+      :conn,
+      :websocket,
+      :request_ref,
+      :request_id,
+      :caller,
+      :status,
+      :resp_headers,
+      :closing?
+    ]
   end
 
   # Public APIs
@@ -86,11 +97,12 @@ defmodule Gremlex.Client do
   def handle_continue({:connect, host, port, ws_path, secure, opts}, %State{} = state) do
     {http_scheme, ws_scheme} = if secure, do: {:https, :wss}, else: {:http, :ws}
 
+    # Default http mode is active
     with {:ok, conn} <-
            Mint.HTTP.connect(http_scheme, host, port, opts),
          {:ok, conn, ref} <-
            Mint.WebSocket.upgrade(ws_scheme, conn, ws_path, [],
-             extensions: [Mint.WebSocket.PerMessageDeflate]
+             extensions: [{Mint.WebSocket.PerMessageDeflate, [:client_max_window_bits]}]
            ) do
       Logger.info("Websocket connected successfully!")
 
@@ -109,17 +121,23 @@ defmodule Gremlex.Client do
   def handle_call({:query, query, timeout}, _from, %State{conn: conn} = state) do
     Logger.debug("Processing query: #{inspect(query)}")
 
-    {:ok, conn_p} = Mint.HTTP.set_mode(conn, :passive)
-    state = put_in(state.conn, conn_p)
+    # Create the request payload
+    %Gremlex.Request{requestId: request_id} = request = Gremlex.Request.new(query)
+    payload = Jason.encode!(request)
 
-    ## Send the query
-    payload = query |> Gremlex.Request.new() |> Jason.encode!()
+    # Switch to passive mode to manually recv responses
+    # This allows us to manually handle the responses
+    {:ok, conn_p} = Mint.HTTP.set_mode(conn, :passive)
+    state = %{state | conn: conn_p, request_id: request_id}
+
+    Logger.info("request: #{inspect(request)}")
 
     {result, state} =
       case send_frame(state, {:text, payload}) do
         {:ok, state} ->
           Logger.debug("Sent query: #{inspect(query)}")
 
+          # Wait for the response
           {recv(state, timeout), state}
 
         {:error, state, reason} ->
@@ -128,9 +146,11 @@ defmodule Gremlex.Client do
 
     Logger.debug("Query result: #{inspect(result)}")
 
+    # Switch again to active mode so GenServer can asynchronously
+    # handle ping/pong and other messages from websocket.
     {:ok, conn_a} = Mint.HTTP.set_mode(conn, :active)
 
-    {:reply, result, %{state | conn: conn_a}}
+    {:reply, result, %{state | conn: conn_a, request_id: nil}}
   end
 
   def handle_call(message, _from, %State{} = state) do
@@ -294,11 +314,18 @@ defmodule Gremlex.Client do
   end
 
   # Single block response
-  def handle_decoded_response(state, [{:text, query_result}], conn, timeout, acc) do
-    response = Jason.decode!(query_result)
+  def handle_decoded_response(
+        %State{request_id: request_id} = state,
+        [{:text, query_result}],
+        conn,
+        timeout,
+        acc
+      ) do
+    %{"requestId" => ^request_id, "status" => %{"code" => status, "message" => error_message}} =
+      response = Jason.decode!(query_result)
+
     result = Deserializer.deserialize(response)
-    status = response["status"]["code"]
-    error_message = response["status"]["message"]
+
     # Continue to block until we receive a 200 status code
     case status do
       200 -> {:ok, acc ++ result}
@@ -316,8 +343,19 @@ defmodule Gremlex.Client do
 
   # Multiple block response. In some cases we can receive a single response
   # containing multiple 206 blocks and a final 200 block
-  def handle_decoded_response(state, [{:text, _} | _rest] = response, conn, timeout, acc) do
-    responses = response |> Keyword.get_values(:text) |> Enum.map(&Jason.decode!/1)
+  def handle_decoded_response(
+        %State{request_id: request_id} = state,
+        [{:text, _} | _rest] = response,
+        conn,
+        timeout,
+        acc
+      ) do
+    responses =
+      response
+      |> Keyword.get_values(:text)
+      |> Enum.map(&Jason.decode!/1)
+      |> Enum.filter(fn %{"requestId" => id} -> id == request_id end)
+
     statuses = MapSet.new(responses, & &1["status"]["code"])
     results = Enum.flat_map(responses, &Deserializer.deserialize/1)
     error_message = Enum.map_join(responses, ", ", & &1["status"]["error_message"])

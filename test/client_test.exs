@@ -179,8 +179,8 @@ defmodule Gremlex.ClientTests do
       assert Enum.count(products) == 2
 
       assert Enum.all?(products, fn x ->
-               x.id in [bag.id, hoodie.id] and
-                 x.properties.price in [[200], [101]] &&
+               (x.id in [bag.id, hoodie.id] and
+                  x.properties.price in [[200], [101]]) &&
                  x.properties.discounted == ["true"]
              end)
     end
@@ -188,7 +188,7 @@ defmodule Gremlex.ClientTests do
 
   describe "handle_decoded_response/5" do
     setup do
-      %{state: %Gremlex.Client.State{}}
+      %{state: %Gremlex.Client.State{request_id: Gremlex.Request.Id.generate()}}
     end
 
     test "returns empty list for 204 response", %{state: state} do
@@ -197,7 +197,7 @@ defmodule Gremlex.ClientTests do
       acc = []
 
       response =
-        "{\"requestId\":\"d71696f1-19da-4ec3-9701-b3d427e05411\",\"status\":{\"message\":\"\",\"code\":204,\"attributes\":{\"@type\":\"g:Map\",\"@value\":[\"host\",\"/192.168.0.1:12345\"]}},\"result\":{\"data\":null,\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}}}"
+        "{\"requestId\":\"#{state.request_id}\",\"status\":{\"message\":\"\",\"code\":204,\"attributes\":{\"@type\":\"g:Map\",\"@value\":[\"host\",\"/192.168.0.1:12345\"]}},\"result\":{\"data\":null,\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}}}"
 
       assert {:ok, []} ==
                Gremlex.Client.handle_decoded_response(
@@ -215,7 +215,7 @@ defmodule Gremlex.ClientTests do
       acc = []
 
       response =
-        "{\"requestId\":\"01df1ca0-677d-4b6f-b592-22b2a34899ad\",\"status\":{\"message\":\"\",\"code\":200,\"attributes\":{\"@type\":\"g:Map\",\"@value\":[\"host\",\"/192.168.0.1:12345\"]}},\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[\"0\"]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}}}"
+        "{\"requestId\":\"#{state.request_id}\",\"status\":{\"message\":\"\",\"code\":200,\"attributes\":{\"@type\":\"g:Map\",\"@value\":[\"host\",\"/192.168.0.1:12345\"]}},\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[\"0\"]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}}}"
 
       assert {:ok, ["0"]} ==
                Gremlex.Client.handle_decoded_response(
@@ -235,9 +235,9 @@ defmodule Gremlex.ClientTests do
       response =
         [
           text:
-            "{\"requestId\":\"38625c21-3a26-43ce-87da-ad296933561e\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id1\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id2\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
+            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id1\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id2\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
           text:
-            "{\"requestId\":\"38625c21-3a26-43ce-87da-ad296933561e\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id2\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id1\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":200,\"message\":\"\"}}"
+            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id2\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id1\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":200,\"message\":\"\"}}"
         ]
 
       assert {:ok,
@@ -258,10 +258,10 @@ defmodule Gremlex.ClientTests do
       response =
         [
           text:
-            "{\"requestId\":\"38625c21-3a26-43ce-87da-ad296933561e\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id1\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id2\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
+            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id1\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id2\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
           pong: " ",
           text:
-            "{\"requestId\":\"38625c21-3a26-43ce-87da-ad296933561e\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id2\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id1\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":200,\"message\":\"\"}}"
+            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id2\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id1\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":200,\"message\":\"\"}}"
         ]
 
       assert {:ok,
