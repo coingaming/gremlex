@@ -20,6 +20,8 @@ defmodule Gremlex.Client do
 
   require Logger
 
+  @mname "#{inspect(__MODULE__)}"
+
   @type error_code ::
           :UNAUTHORIZED
           | :MALFORMED_REQUEST
@@ -88,7 +90,7 @@ defmodule Gremlex.Client do
     secure = Keyword.fetch!(args, :secure)
     opts = Keyword.fetch!(args, :opts)
 
-    Logger.info("Initializing Client...")
+    Logger.info("[#{@mname}] Initializing Client...")
 
     {:ok, %State{}, {:continue, {:connect, host, port, path, secure, opts}}}
   end
@@ -104,9 +106,8 @@ defmodule Gremlex.Client do
            Mint.WebSocket.upgrade(ws_scheme, conn, ws_path, [],
              extensions: [{Mint.WebSocket.PerMessageDeflate, [:client_max_window_bits]}]
            ) do
-      Logger.info("Websocket connected successfully!")
+      Logger.info("[#{@mname}] Websocket connected successfully!")
 
-      schedule_ping()
       {:noreply, %{state | conn: conn, request_ref: ref}}
     else
       {:error, reason} ->
@@ -129,8 +130,6 @@ defmodule Gremlex.Client do
     # This allows us to manually handle the responses
     {:ok, conn_p} = Mint.HTTP.set_mode(conn, :passive)
     state = %{state | conn: conn_p, request_id: request_id}
-
-    Logger.info("request: #{inspect(request)}")
 
     {result, state} =
       case send_frame(state, {:text, payload}) do
@@ -184,7 +183,7 @@ defmodule Gremlex.Client do
         end
 
       {:error, conn, reason, responses} ->
-        Logger.error("Received error: #{inspect(reason)}", responses: responses)
+        Logger.error("[#{@mname}] Received error: #{inspect(reason)}", responses: responses)
         {:noreply, put_in(state.conn, conn)}
 
       :unknown ->
@@ -194,7 +193,7 @@ defmodule Gremlex.Client do
 
   @impl GenServer
   def terminate(reason, %State{} = state) do
-    Logger.info("Terminating Client with reason: #{inspect(reason)}")
+    Logger.warning("[#{@mname}] Terminating Client with reason: #{inspect(reason)}")
     do_close(state)
 
     :ok
@@ -231,6 +230,8 @@ defmodule Gremlex.Client do
     case Mint.WebSocket.new(state.conn, ref, state.status, state.resp_headers) do
       {:ok, conn, websocket} ->
         Logger.debug("New connection created!")
+
+        schedule_ping()
         %{state | conn: conn, websocket: websocket, status: nil, resp_headers: nil}
 
       {:error, conn, reason} ->
@@ -302,68 +303,63 @@ defmodule Gremlex.Client do
     end
   end
 
-  # No need to schedule ping message again since they are periodically scheduled
-  def handle_decoded_response(state, [{:pong, _}], _conn, timeout, acc) do
-    recv(state, timeout, acc)
-  end
-
-  # Keep the connection alive
-  def handle_decoded_response(state, [{:ping, _}], _conn, timeout, acc) do
-    {:ok, state} = send_frame(state, {:pong, ""})
-    recv(state, timeout, acc)
-  end
-
-  # Single block response
+  # Handle single or multiple text block responses
+  # In some cases we can receive a single response containing multiple 206 blocks and a final 200 block
   def handle_decoded_response(
         %State{request_id: request_id} = state,
-        [{:text, query_result}],
+        [{:text, _} | _] = responses,
         conn,
         timeout,
         acc
       ) do
-    %{"requestId" => ^request_id, "status" => %{"code" => status, "message" => error_message}} =
-      response = Jason.decode!(query_result)
-
-    result = Deserializer.deserialize(response)
-
-    # Continue to block until we receive a 200 status code
-    case status do
-      200 -> {:ok, acc ++ result}
-      204 -> {:ok, []}
-      206 -> recv(Map.put(state, :conn, conn), timeout, acc ++ result)
-      401 -> {:error, :UNAUTHORIZED, error_message}
-      409 -> {:error, :MALFORMED_REQUEST, error_message}
-      499 -> {:error, :INVALID_REQUEST_ARGUMENTS, error_message}
-      500 -> {:error, :SERVER_ERROR, error_message}
-      597 -> {:error, :SCRIPT_EVALUATION_ERROR, error_message}
-      598 -> {:error, :SERVER_TIMEOUT, error_message}
-      599 -> {:error, :SERVER_SERIALIZATION_ERROR, error_message}
-    end
-  end
-
-  # Multiple block response. In some cases we can receive a single response
-  # containing multiple 206 blocks and a final 200 block
-  def handle_decoded_response(
-        %State{request_id: request_id} = state,
-        [{:text, _} | _rest] = response,
-        conn,
-        timeout,
-        acc
-      ) do
-    responses =
-      response
+    # Filter responses by requestId
+    filtered_responses =
+      responses
       |> Keyword.get_values(:text)
       |> Enum.map(&Jason.decode!/1)
       |> Enum.filter(fn %{"requestId" => id} -> id == request_id end)
 
+    handle_filtered_responses(state, filtered_responses, conn, timeout, acc)
+  end
+
+  # No need to schedule ping message again since they are periodically scheduled
+  # Keep the connection alive
+  def handle_decoded_response(state, [{:pong, _}], _conn, timeout, acc) do
+    recv(state, timeout, acc)
+  end
+
+  def handle_decoded_response(state, [{:ping, _}], _conn, timeout, acc) do
+    recv(state, timeout, acc)
+  end
+
+  # Unhandled response
+  def handle_decoded_response(state, _response, _conn, timeout, acc) do
+    recv(state, timeout, acc)
+  end
+
+  defp handle_filtered_responses(state, [], conn, timeout, acc) do
+    # No matching responses, just continue waiting
+    recv(put_in(state.conn, conn), timeout, acc)
+  end
+
+  defp handle_filtered_responses(state, responses, conn, timeout, acc) do
+    results =
+      Enum.flat_map(responses, fn response ->
+        case Deserializer.deserialize(response) do
+          nil -> []
+          value -> value
+        end
+      end)
+
     statuses = MapSet.new(responses, & &1["status"]["code"])
-    results = Enum.flat_map(responses, &Deserializer.deserialize/1)
-    error_message = Enum.map_join(responses, ", ", & &1["status"]["error_message"])
+
+    error_message =
+      Enum.map_join(responses, ", ", &(&1["status"]["message"] || &1["status"]["error_message"]))
 
     cond do
       200 in statuses -> {:ok, acc ++ results}
       204 in statuses -> {:ok, []}
-      206 in statuses -> recv(Map.put(state, :conn, conn), timeout, acc ++ results)
+      206 in statuses -> recv(put_in(state.conn, conn), timeout, acc ++ results)
       401 in statuses -> {:error, :UNAUTHORIZED, error_message}
       409 in statuses -> {:error, :MALFORMED_REQUEST, error_message}
       499 in statuses -> {:error, :INVALID_REQUEST_ARGUMENTS, error_message}
@@ -376,6 +372,6 @@ defmodule Gremlex.Client do
 
   defp schedule_ping do
     # TODO: Revert once tested on test envs
-    Process.send_after(self(), :ping, 500)
+    Process.send_after(self(), :ping, 50)
   end
 end

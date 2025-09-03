@@ -179,8 +179,8 @@ defmodule Gremlex.ClientTests do
       assert Enum.count(products) == 2
 
       assert Enum.all?(products, fn x ->
-               (x.id in [bag.id, hoodie.id] and
-                  x.properties.price in [[200], [101]]) &&
+               x.id in [bag.id, hoodie.id] and
+                 x.properties.price in [[200], [101]] &&
                  x.properties.discounted == ["true"]
              end)
     end
