@@ -102,12 +102,12 @@ defmodule Gremlex.Client do
   end
 
   @impl true
-  def handle_continue(:connect, state) do
+  def handle_continue(:connect, %State{} = state) do
     case connect_websocket(state) do
       {:ok, state} ->
         Logger.info("[#{@mname}] Connected successfully!")
 
-        {:noreply, %{state | status: :connected}}
+        {:noreply, state}
 
       {:error, reason} ->
         Logger.warning("[#{@mname}] Failed to connect: #{inspect(reason)}")
@@ -118,11 +118,16 @@ defmodule Gremlex.Client do
   end
 
   @impl GenServer
+  def handle_call({:query, _query, _timeout}, _from, %State{websocket: websocket} = state)
+      when is_nil(websocket) do
+    Process.send_after(self(), :reconnect, @reconnect_interval)
+    {:reply, {:error, :NOT_CONNECTED}, state}
+  end
+
   def handle_call({:query, query, timeout}, _from, %State{} = state) do
     # Create the request payload
     %Gremlex.Request{requestId: request_id} = request = Gremlex.Request.new(query)
     payload = Jason.encode!(request)
-    # state = put_in(state.request_id, request_id)
 
     # Switch to passive mode to synchronously recv responses
     with {:ok, state} <- change_mode(state, :passive),
@@ -275,8 +280,6 @@ defmodule Gremlex.Client do
          %State{request_ref: ref, websocket: websocket} = state
        )
        when not is_nil(websocket) do
-    Logger.info("[#{@mname}] Received data: #{inspect(WebSocket.decode(websocket, data))}")
-
     case WebSocket.decode(websocket, data) do
       {:ok, _websocket, [pong: ""]} ->
         state
@@ -294,8 +297,7 @@ defmodule Gremlex.Client do
          {:ok, conn} <- WebSocket.stream_request_body(conn, ref, data) do
       {:ok, %{state | conn: conn, websocket: websocket}}
     else
-      {:error, %WebSocket{} = _websocket, reason} -> {:error, reason}
-      {:error, _conn, reason} -> {:error, reason}
+      {:error, _websocket, reason} -> {:error, reason}
     end
   end
 
