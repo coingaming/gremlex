@@ -152,7 +152,7 @@ defmodule Gremlex.Client do
       {:ok, state} ->
         Logger.info("[#{@mname}] Connected successfully!")
 
-        {:noreply, %{state | status: :connected}}
+        {:noreply, state}
 
       {:error, reason} ->
         Logger.warning("[#{@mname}] Failed to connect: #{inspect(reason)}")
@@ -393,8 +393,7 @@ defmodule Gremlex.Client do
   end
 
   defp schedule_ping do
-    # TODO: Revert once tested on test envs
-    Process.send_after(self(), :ping, 5_000)
+    Process.send_after(self(), :ping, 5 * 60_000)
   end
 
   defp log_unexpected_responses(responses) do
