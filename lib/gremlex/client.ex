@@ -364,7 +364,7 @@ defmodule Gremlex.Client do
       Enum.flat_map(responses, fn response ->
         case Deserializer.deserialize(response) do
           nil -> []
-          value -> value
+          value when is_list(value) -> value
         end
       end)
 
