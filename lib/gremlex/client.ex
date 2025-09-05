@@ -22,7 +22,9 @@ defmodule Gremlex.Client do
 
   require Logger
 
+  @ping_interval 5 * 60_000
   @reconnect_interval 1_000
+
   @mname "#{inspect(__MODULE__)}"
 
   @type error_code ::
@@ -111,16 +113,14 @@ defmodule Gremlex.Client do
       {:error, reason} ->
         Logger.warning("[#{@mname}] Failed to connect: #{inspect(reason)}")
 
-        Process.send_after(self(), :reconnect, @reconnect_interval)
-        {:noreply, state}
+        reconnect()
+        {:noreply, %State{state | conn: nil, websocket: nil}}
     end
   end
 
   @impl GenServer
   def handle_call({:query, _query, _timeout}, _from, %State{websocket: websocket} = state)
       when is_nil(websocket) do
-    Process.send_after(self(), :connect, @reconnect_interval)
-
     {:reply, {:error, :CONNECTION_UNAVAILABLE}, state}
   end
 
@@ -155,8 +155,8 @@ defmodule Gremlex.Client do
       {:error, reason} ->
         Logger.warning("[#{@mname}] Failed to connect: #{inspect(reason)}")
 
-        Process.send_after(self(), :reconnect, @reconnect_interval)
-        {:noreply, state}
+        reconnect()
+        {:noreply, %State{state | conn: nil, websocket: nil}}
     end
   end
 
@@ -185,12 +185,22 @@ defmodule Gremlex.Client do
         state = put_in(state.conn, conn)
         state = Enum.reduce(responses, state, &handle_response/2)
 
-        if state.closing? do
-          Process.send_after(self(), :reconnect, @reconnect_interval)
-          {:noreply, state}
-        else
-          {:noreply, state}
-        end
+        state =
+          if state.closing? do
+            reconnect()
+            %State{state | conn: nil, websocket: nil}
+          else
+            state
+          end
+
+        {:noreply, state}
+
+      {:error, _conn, %Mint.TransportError{reason: :closed}, responses} ->
+        Logger.metadata(responses: responses)
+        Logger.warning("[#{@mname}] WebSocket connection closed!")
+
+        reconnect()
+        {:noreply, %State{state | conn: nil, websocket: nil}}
 
       {:error, _conn, reason, responses} ->
         Logger.metadata(responses: responses)
@@ -266,7 +276,7 @@ defmodule Gremlex.Client do
         %{state | conn: conn, websocket: websocket, status: nil, resp_headers: []}
 
       {:error, _conn, _reason} ->
-        Process.send_after(self(), :reconnect, @reconnect_interval)
+        reconnect()
 
         %State{state | conn: nil, websocket: nil}
     end
@@ -389,10 +399,6 @@ defmodule Gremlex.Client do
     end
   end
 
-  defp schedule_ping do
-    Process.send_after(self(), :ping, 5 * 60_000)
-  end
-
   defp log_unexpected_responses(responses) do
     responses
     |> Enum.reject(&(&1 in [:ping, :pong]))
@@ -400,4 +406,7 @@ defmodule Gremlex.Client do
       Logger.warning("[#{@mname}] Received unexpected response: #{inspect(response)}")
     end)
   end
+
+  defp schedule_ping, do: Process.send_after(self(), :ping, @ping_interval)
+  defp reconnect, do: Process.send_after(self(), :connect, @reconnect_interval)
 end
