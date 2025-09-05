@@ -258,16 +258,30 @@ defmodule Gremlex.ClientTests do
       response =
         [
           text:
-            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id1\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id2\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
+            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id1\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id6\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
           pong: " ",
           text:
-            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id2\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id1\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":200,\"message\":\"\"}}"
+            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id2\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id5\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
+          text:
+            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id3\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id4\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
+          text:
+            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id4\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id3\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
+          pong: " ",
+          close: " ",
+          text:
+            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id5\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id2\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":206,\"message\":\"\"}}",
+          text:
+            "{\"requestId\":\"#{state.request_id}\",\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[{\"@type\":\"g:Map\",\"@value\":[\"id\",\"id6\",\"linked\",{\"@type\":\"g:List\",\"@value\":[\"id1\"]},\"label\",\"VERTEX\"]}]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}},\"status\":{\"attributes\":{\"@type\":\"g:Map\",\"@value\":[]},\"code\":200,\"message\":\"\"}}"
         ]
 
       assert {:ok,
               [
-                %{"id" => "id1", "linked" => ["id2"], "label" => "VERTEX"},
-                %{"id" => "id2", "linked" => ["id1"], "label" => "VERTEX"}
+                %{"id" => "id1", "linked" => ["id6"], "label" => "VERTEX"},
+                %{"id" => "id2", "linked" => ["id5"], "label" => "VERTEX"},
+                %{"id" => "id3", "linked" => ["id4"], "label" => "VERTEX"},
+                %{"id" => "id4", "linked" => ["id3"], "label" => "VERTEX"},
+                %{"id" => "id5", "linked" => ["id2"], "label" => "VERTEX"},
+                %{"id" => "id6", "linked" => ["id1"], "label" => "VERTEX"}
               ]} ==
                Gremlex.Client.handle_decoded_response(state, response, conn, timeout, acc)
     end

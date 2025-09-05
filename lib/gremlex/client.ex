@@ -105,8 +105,6 @@ defmodule Gremlex.Client do
   def handle_continue(:connect, %State{} = state) do
     case connect_websocket(state) do
       {:ok, state} ->
-        Logger.info("[#{@mname}] Connected successfully!")
-
         {:noreply, state}
 
       {:error, reason} ->
@@ -150,8 +148,6 @@ defmodule Gremlex.Client do
   def handle_info(:connect, %State{} = state) do
     case connect_websocket(state) do
       {:ok, state} ->
-        Logger.info("[#{@mname}] Connected successfully!")
-
         {:noreply, state}
 
       {:error, reason} ->
@@ -188,7 +184,8 @@ defmodule Gremlex.Client do
         state = Enum.reduce(responses, state, &handle_response/2)
 
         if state.closing? do
-          {:stop, :normal, state}
+          Process.send_after(self(), :reconnect, @reconnect_interval)
+          {:noreply, state}
         else
           {:noreply, state}
         end
@@ -216,14 +213,11 @@ defmodule Gremlex.Client do
     [host: host, port: port, path: ws_path, secure: secure, opts: opts] = connect_opts
     {http_scheme, ws_scheme} = if secure, do: {:https, :wss}, else: {:http, :ws}
 
-    with {:ok, conn} <-
-           HTTP.connect(http_scheme, host, port, opts),
+    with {:ok, conn} <- HTTP.connect(http_scheme, host, port, opts),
          {:ok, conn, ref} <-
            WebSocket.upgrade(ws_scheme, conn, ws_path, [],
-             extensions: [{WebSocket.PerMessageDeflate, [client_max_window_bits: 15]}]
+             extensions: [WebSocket.PerMessageDeflate]
            ) do
-      Logger.info("[#{@mname}] Websocket connected successfully!")
-
       {:ok, %{state | conn: conn, request_ref: ref}}
     else
       {:error, reason} ->
@@ -247,8 +241,9 @@ defmodule Gremlex.Client do
   # Internal functions
   defp handle_response({:close, _code, reason} = _response, %State{} = state) do
     Logger.warning("[#{@mname}] Received close connection: #{inspect(reason)}")
+
     do_close(state)
-    %{state | closing?: true}
+    %{state | closing?: true, websocket: nil, conn: nil}
   end
 
   defp handle_response({:status, ref, status} = _response, %State{request_ref: ref} = state) do
