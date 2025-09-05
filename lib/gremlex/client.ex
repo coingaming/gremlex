@@ -336,6 +336,6 @@ defmodule Gremlex.Client do
   end
 
   defp schedule_ping do
-    Process.send_after(self(), :ping, 30_000)
+    Process.send_after(self(), :ping, 500)
   end
 end
