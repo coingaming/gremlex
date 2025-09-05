@@ -33,6 +33,7 @@ defmodule Gremlex.Client do
           | :SCRIPT_EVALUATION_ERROR
           | :SERVER_TIMEOUT
           | :SERVER_SERIALIZATION_ERROR
+          | :CONNECTION_UNAVAILABLE
 
   @type response :: {:ok, list()} | {:error, error_code(), reason :: String.t()}
 
@@ -118,8 +119,9 @@ defmodule Gremlex.Client do
   @impl GenServer
   def handle_call({:query, _query, _timeout}, _from, %State{websocket: websocket} = state)
       when is_nil(websocket) do
-    Process.send_after(self(), :reconnect, @reconnect_interval)
-    {:reply, {:error, :NOT_CONNECTED}, state}
+    Process.send_after(self(), :connect, @reconnect_interval)
+
+    {:reply, {:error, :CONNECTION_UNAVAILABLE}, state}
   end
 
   def handle_call({:query, query, timeout}, _from, %State{} = state) do
