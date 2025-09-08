@@ -1,5 +1,10 @@
 ## Unreleased
 
+## 0.4.7 [2025-09-08]
+
+## Fixes
+- Fix unexpected :ok in query response
+
 ## 0.4.6 [2025-07-14]
 
 ### Fixes
