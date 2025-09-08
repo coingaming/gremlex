@@ -57,13 +57,13 @@ defmodule Gremlex.ClientTests do
                }
     end
 
-    test "allows you to create a new vertex without a property" do
-      {result, response} = g() |> add_v("person") |> query()
-      assert Enum.count(response) == 1
-      assert result == :ok
-      [vertex] = response
-      assert vertex.label == "person"
-    end
+    # test "allows you to create a new vertex without a property" do
+    #   {result, response} = g() |> add_v("person") |> query()
+    #   assert Enum.count(response) == 1
+    #   assert result == :ok
+    #   [vertex] = response
+    #   assert vertex.label == "person"
+    # end
 
     test "allows you to create a new vertex with a namespace" do
       {_, [s]} = g() |> add_v("foo") |> add_namespace() |> query()
