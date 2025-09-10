@@ -121,7 +121,7 @@ defmodule Gremlex.Client do
   @impl GenServer
   def handle_call({:query, _query, _timeout}, _from, %State{websocket: websocket} = state)
       when is_nil(websocket) do
-    {:reply, {:error, :CONNECTION_UNAVAILABLE}, state}
+    {:reply, {:error, :CONNECTION_UNAVAILABLE, "WebSocket not connected"}, state}
   end
 
   def handle_call({:query, query, timeout}, _from, %State{} = state) do
@@ -131,18 +131,24 @@ defmodule Gremlex.Client do
 
     # Switch to passive mode to synchronously recv responses
     with {:ok, state} <- change_mode(state, :passive),
-         {:ok, state} <- send_frame(put_in(state.request_id, request_id), {:text, payload}) do
-      reply = recv(state, timeout)
-
+         {:ok, state} <- send_frame(put_in(state.request_id, request_id), {:text, payload}),
+         {:ok, reply} <- recv(state, timeout) do
       Process.send_after(self(), {:change_mode, :active}, 0)
       schedule_ping()
 
-      {:reply, reply, put_in(state.request_id, nil)}
+      {:reply, {:ok, reply}, put_in(state.request_id, nil)}
     else
       {:error, reason} ->
         Logger.error("[#{@mname}] Failed to query: #{inspect(reason)}")
 
-        {:reply, {:error, reason}, state}
+        schedule_ping()
+        {:reply, {:error, :SERVER_ERROR, reason}, state}
+
+      {:error, error_code, reason} ->
+        Logger.error("[#{@mname}] WebSocket error: #{inspect(reason)}")
+
+        schedule_ping()
+        {:reply, {:error, error_code, reason}, state}
     end
   end
 
@@ -233,11 +239,11 @@ defmodule Gremlex.Client do
       {:ok, %{state | conn: conn, request_ref: ref}}
     else
       {:error, reason} ->
-        {:error, Exception.message(reason)}
+        {:error, reason}
 
       {:error, conn, reason} ->
         Mint.HTTP.close(conn)
-        {:error, Exception.message(reason)}
+        {:error, reason}
     end
   end
 
@@ -330,60 +336,44 @@ defmodule Gremlex.Client do
     end
   end
 
-  # Handle single or multiple text block responses
-  # In some cases we can receive a single response containing multiple 206 blocks and a final 200 block
-  def handle_decoded_response(
-        %State{request_id: request_id} = state,
-        [{:text, _} | _] = responses,
-        conn,
-        timeout,
-        acc
-      ) do
-    # Filter responses by requestId
-    {responses, unexpected_responses} =
-      responses
-      |> Keyword.get_values(:text)
-      |> Enum.map(&Jason.decode!/1)
-      |> Enum.split_with(fn resp -> resp["requestId"] == request_id end)
-
-    :ok = log_unexpected_responses(unexpected_responses)
-
-    handle_filtered_responses(state, responses, conn, timeout, acc)
-  end
-
   # No need to schedule ping message again since they are periodically scheduled
   # Keep the connection alive
   def handle_decoded_response(state, [{:pong, _}], _conn, timeout, acc) do
     recv(state, timeout, acc)
   end
 
-  def handle_decoded_response(state, [{:ping, _}], _conn, timeout, acc) do
-    recv(state, timeout, acc)
+  def handle_decoded_response(_state, [{:error, reason}], _conn, _timeout, _acc) do
+    {:error, reason}
   end
 
-  # Unhandled response
-  def handle_decoded_response(state, _response, _conn, timeout, acc) do
-    recv(state, timeout, acc)
+  # Single block response
+  def handle_decoded_response(state, [{:text, query_result}], conn, timeout, acc) do
+    response = Jason.decode!(query_result)
+    result = Deserializer.deserialize(response)
+    status = response["status"]["code"]
+    error_message = response["status"]["message"]
+    # Continue to block until we receive a 200 status code
+    case status do
+      200 -> {:ok, acc ++ result}
+      204 -> {:ok, []}
+      206 -> recv(put_in(state.conn, conn), timeout, acc ++ result)
+      401 -> {:error, :UNAUTHORIZED, error_message}
+      409 -> {:error, :MALFORMED_REQUEST, error_message}
+      499 -> {:error, :INVALID_REQUEST_ARGUMENTS, error_message}
+      500 -> {:error, :SERVER_ERROR, error_message}
+      597 -> {:error, :SCRIPT_EVALUATION_ERROR, error_message}
+      598 -> {:error, :SERVER_TIMEOUT, error_message}
+      599 -> {:error, :SERVER_SERIALIZATION_ERROR, error_message}
+    end
   end
 
-  defp handle_filtered_responses(state, [], conn, timeout, acc) do
-    # No matching responses, just continue waiting
-    recv(put_in(state.conn, conn), timeout, acc)
-  end
-
-  defp handle_filtered_responses(state, responses, conn, timeout, acc) do
-    results =
-      Enum.flat_map(responses, fn response ->
-        case Deserializer.deserialize(response) do
-          nil -> []
-          value when is_list(value) -> value
-        end
-      end)
-
+  # Multiple block response. In some cases we can receive a single response
+  # containing multiple 206 blocks and a final 200 block
+  def handle_decoded_response(state, [{:text, _} | _rest] = response, conn, timeout, acc) do
+    responses = response |> Keyword.get_values(:text) |> Enum.map(&Jason.decode!/1)
     statuses = MapSet.new(responses, & &1["status"]["code"])
-
-    error_message =
-      Enum.map_join(responses, ", ", &(&1["status"]["message"] || &1["status"]["error_message"]))
+    results = Enum.flat_map(responses, &Deserializer.deserialize/1)
+    error_message = Enum.map_join(responses, ", ", & &1["status"]["error_message"])
 
     cond do
       200 in statuses -> {:ok, acc ++ results}
@@ -397,14 +387,6 @@ defmodule Gremlex.Client do
       598 in statuses -> {:error, :SERVER_TIMEOUT, error_message}
       599 in statuses -> {:error, :SERVER_SERIALIZATION_ERROR, error_message}
     end
-  end
-
-  defp log_unexpected_responses(responses) do
-    responses
-    |> Enum.reject(&(&1 in [:ping, :pong]))
-    |> Enum.each(fn response ->
-      Logger.warning("[#{@mname}] Received unexpected response: #{inspect(response)}")
-    end)
   end
 
   defp schedule_ping, do: Process.send_after(self(), :ping, @ping_interval)

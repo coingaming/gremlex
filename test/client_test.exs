@@ -191,6 +191,21 @@ defmodule Gremlex.ClientTests do
       %{state: %Gremlex.Client.State{request_id: Gremlex.Request.Id.generate()}}
     end
 
+    test "returns error tuple for 4xx and 5xx responses", %{state: state} do
+      timeout = 5_000
+      conn = nil
+      acc = []
+
+      assert {:error, "Invalid request"} ==
+               Gremlex.Client.handle_decoded_response(
+                 state,
+                 [error: "Invalid request"],
+                 conn,
+                 timeout,
+                 acc
+               )
+    end
+
     test "returns empty list for 204 response", %{state: state} do
       timeout = 5_000
       conn = nil
