@@ -338,7 +338,12 @@ defmodule Gremlex.Client do
 
   # No need to schedule ping message again since they are periodically scheduled
   # Keep the connection alive
-  def handle_decoded_response(state, [{:pong, _}], _conn, timeout, acc) do
+  def handle_decoded_response(state, [{:pong, _} | rest], conn, timeout, acc) do
+    handle_decoded_response(state, rest, conn, timeout, acc)
+  end
+
+  # If only pong messages are received and ignored in the function call above, continue to recv
+  def handle_decoded_response(state, [], _conn, timeout, acc) do
     recv(state, timeout, acc)
   end
 
@@ -370,6 +375,7 @@ defmodule Gremlex.Client do
   # Multiple block response. In some cases we can receive a single response
   # containing multiple 206 blocks and a final 200 block
   def handle_decoded_response(state, [{:text, _} | _rest] = response, conn, timeout, acc) do
+    # Discarding pong messages if any, as they used to keep the connection alive and are not health checks
     responses = response |> Keyword.get_values(:text) |> Enum.map(&Jason.decode!/1)
     statuses = MapSet.new(responses, & &1["status"]["code"])
     results = Enum.flat_map(responses, &Deserializer.deserialize/1)

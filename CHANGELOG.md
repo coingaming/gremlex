@@ -1,5 +1,8 @@
 ## Unreleased
 
+## 0.4.9 [2025-09-11]
+- Handle multiple pong messages in a query response.
+
 ## 0.4.8 [2025-09-10]
 - Handle server errors in query response.
 
