@@ -256,12 +256,12 @@ defmodule Gremlex.GraphTests do
 
   describe "element_map/2" do
     test "adds an elementMap function to the queue with a single property" do
-      actual_graph = g() | v() |> Graph.element_map("hello")
+      actual_graph = g() |> v() |> Graph.element_map("hello")
       assert encode(actual_graph) == "g.V().elementMap('hello')"
     end
 
     test "adds an elementMap function to the queue with list of properties" do
-      actual_graph = g() |> Graph.element_map(["foo", "bar"])
+      actual_graph = g() |> v() |> Graph.element_map(["foo", "bar"])
       assert encode(actual_graph) == "g.V().elementMap('foo', 'bar')"
     end
   end
