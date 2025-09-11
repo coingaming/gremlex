@@ -1,5 +1,10 @@
 ## Unreleased
 
+## 0.4.11 [2025-09-11]
+
+### Fixes
+- Fix changelog.
+
 ## 0.4.10 [2025-09-11]
 
 ### Added
