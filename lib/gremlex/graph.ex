@@ -183,6 +183,16 @@ defmodule Gremlex.Graph do
   end
 
   @doc """
+  Appends elementMap command to the traversal.
+  """
+  @spec element_map(t(), String.t() | list(String.t())) :: t()
+  def element_map(graph, values) when is_list(values), do: enqueue(graph, "elementMap", values)
+  def element_map(graph, value), do: enqueue(graph, "elementMap", [value])
+
+  @spec element_map(t()) :: t()
+  def element_map(graph), do: enqueue(graph, "elementMap", [])
+
+  @doc """
   Appends values command to the traversal.
   Returns a graph to allow chaining.
   """

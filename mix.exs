@@ -2,7 +2,7 @@ defmodule Gremlex.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/coingaming/gremlex"
-  @version "0.4.9"
+  @version "0.4.10"
 
   def project do
     [
