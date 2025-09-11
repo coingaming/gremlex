@@ -1,5 +1,8 @@
 ## Unreleased
 
+## 0.4.10 [2025-09-11]
+- Added support for `elementMap()` traversal step via `Gremlex.Graph.element_map/1` and `Gremlex.Graph.element_map/2` functions
+
 ## 0.4.9 [2025-09-11]
 - Handle multiple pong messages in a query response.
 
