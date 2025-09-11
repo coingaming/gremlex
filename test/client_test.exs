@@ -206,7 +206,7 @@ defmodule Gremlex.ClientTests do
                )
     end
 
-    test "handle pong message in query response", %{state: state} do
+    test "handles pong with text response", %{state: state} do
       timeout = 5_000
       conn = nil
       acc = []
@@ -214,34 +214,52 @@ defmodule Gremlex.ClientTests do
       text_response =
         "{\"requestId\":\"#{state.request_id}\",\"status\":{\"message\":\"\",\"code\":200,\"attributes\":{\"@type\":\"g:Map\",\"@value\":[\"host\",\"/192.168.0.1:12345\"]}},\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[\"0\"]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}}}"
 
-      response1 = [pong: " ", text: text_response]
+      responses = [pong: " ", text: text_response]
 
       assert {:ok, ["0"]} ==
                Gremlex.Client.handle_decoded_response(
                  state,
-                 response1,
+                 responses,
                  conn,
                  timeout,
                  acc
                )
+    end
 
-      response2 = [pong: " ", pong: " ", text: text_response]
+    test "handles multiple pongs with text response", %{state: state} do
+      timeout = 5_000
+      conn = nil
+      acc = []
+
+      text_response =
+        "{\"requestId\":\"#{state.request_id}\",\"status\":{\"message\":\"\",\"code\":200,\"attributes\":{\"@type\":\"g:Map\",\"@value\":[\"host\",\"/192.168.0.1:12345\"]}},\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[\"0\"]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}}}"
+
+      responses = [pong: " ", pong: " ", text: text_response]
 
       assert {:ok, ["0"]} ==
                Gremlex.Client.handle_decoded_response(
                  state,
-                 response2,
+                 responses,
                  conn,
                  timeout,
                  acc
                )
+    end
 
-      response3 = [text: text_response, pong: " ", pong: " ", pong: " "]
+    test "handles multiple pongs before text response", %{state: state} do
+      timeout = 5_000
+      conn = nil
+      acc = []
+
+      text_response =
+        "{\"requestId\":\"#{state.request_id}\",\"status\":{\"message\":\"\",\"code\":200,\"attributes\":{\"@type\":\"g:Map\",\"@value\":[\"host\",\"/192.168.0.1:12345\"]}},\"result\":{\"data\":{\"@type\":\"g:List\",\"@value\":[\"0\"]},\"meta\":{\"@type\":\"g:Map\",\"@value\":[]}}}"
+
+      responses = [text: text_response, pong: " ", pong: " ", pong: " "]
 
       assert {:ok, ["0"]} ==
                Gremlex.Client.handle_decoded_response(
                  state,
-                 response3,
+                 responses,
                  conn,
                  timeout,
                  acc

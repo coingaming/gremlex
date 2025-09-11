@@ -375,6 +375,7 @@ defmodule Gremlex.Client do
   # Multiple block response. In some cases we can receive a single response
   # containing multiple 206 blocks and a final 200 block
   def handle_decoded_response(state, [{:text, _} | _rest] = response, conn, timeout, acc) do
+    # Discarding pong messages if any, as they used to keep the connection alive and are not health checks
     responses = response |> Keyword.get_values(:text) |> Enum.map(&Jason.decode!/1)
     statuses = MapSet.new(responses, & &1["status"]["code"])
     results = Enum.flat_map(responses, &Deserializer.deserialize/1)
