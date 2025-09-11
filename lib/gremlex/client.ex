@@ -338,7 +338,12 @@ defmodule Gremlex.Client do
 
   # No need to schedule ping message again since they are periodically scheduled
   # Keep the connection alive
-  def handle_decoded_response(state, [{:pong, _}], _conn, timeout, acc) do
+  def handle_decoded_response(state, [{:pong, _} | rest], conn, timeout, acc) do
+    handle_decoded_response(state, rest, conn, timeout, acc)
+  end
+
+  # If only pong messages are received and ignored in the function call above, continue to recv
+  def handle_decoded_response(state, [], _conn, timeout, acc) do
     recv(state, timeout, acc)
   end
 
