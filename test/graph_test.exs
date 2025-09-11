@@ -247,23 +247,22 @@ defmodule Gremlex.GraphTests do
     end
   end
 
-  describe "element_map" do
+  describe "element_map/1" do
     test "adds an elementMap function to the queue" do
-      actual_graph = g() |> Graph.element_map()
-      expected_graph = Queue.in({"elementMap", []}, Queue.new())
-      assert actual_graph == expected_graph
+      actual_graph = g() |> v() |> Graph.element_map()
+      assert encode(actual_graph) == "g.V().elementMap()"
     end
+  end
 
+  describe "element_map/2" do
     test "adds an elementMap function to the queue with a single property" do
-      actual_graph = g() |> Graph.element_map("hello")
-      expected_graph = Queue.in({"elementMap", ["hello"]}, Queue.new())
-      assert actual_graph == expected_graph
+      actual_graph = g() | v() |> Graph.element_map("hello")
+      assert encode(actual_graph) == "g.V().elementMap('hello')"
     end
 
     test "adds an elementMap function to the queue with list of properties" do
       actual_graph = g() |> Graph.element_map(["foo", "bar"])
-      expected_graph = Queue.in({"elementMap", ["foo", "bar"]}, Queue.new())
-      assert actual_graph == expected_graph
+      assert encode(actual_graph) == "g.V().elementMap('foo', 'bar')"
     end
   end
 
