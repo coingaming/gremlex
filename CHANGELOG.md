@@ -1,19 +1,28 @@
 ## Unreleased
 
+## 0.4.11 [2025-09-11]
+
+### Fixes
+- Fix changelog.
+
 ## 0.4.10 [2025-09-11]
 
 ### Added
 - Add support for `elementMap()` traversal step via `Gremlex.Graph.element_map/1` and `Gremlex.Graph.element_map/2` functions
 
 ## 0.4.9 [2025-09-11]
+
+### Fixes
 - Handle multiple pong messages in a query response.
 
 ## 0.4.8 [2025-09-10]
+
+### Fixes
 - Handle server errors in query response.
 
 ## 0.4.7 [2025-09-08]
 
-## Fixes
+### Fixes
 - Fix unexpected :ok in query response
 
 ## 0.4.6 [2025-07-14]
