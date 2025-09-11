@@ -7,17 +7,17 @@
 
 ## 0.4.9 [2025-09-11]
 
-## Fixes
+### Fixes
 - Handle multiple pong messages in a query response.
 
 ## 0.4.8 [2025-09-10]
 
-## Fixes
+### Fixes
 - Handle server errors in query response.
 
 ## 0.4.7 [2025-09-08]
 
-## Fixes
+### Fixes
 - Fix unexpected :ok in query response
 
 ## 0.4.6 [2025-07-14]
