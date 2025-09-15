@@ -149,6 +149,13 @@ defmodule Gremlex.Client do
 
         schedule_ping()
         {:reply, {:error, error_code, reason}, state}
+
+      # Handle WebSocket.recv/3 error: {:error, %Mint.HTTP1{}, Mint.Types.error(), [Mint.Types.response()]}
+      {:error, _conn, reason, responses} ->
+        Logger.error("[#{@mname}] WebSocket error: #{reason}, responses #{inspect(responses)}")
+
+        schedule_ping()
+        {:reply, {:error, :SERVER_ERROR, to_string(reason)}, state}
     end
   end
 
