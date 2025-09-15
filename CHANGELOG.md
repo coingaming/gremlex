@@ -1,9 +1,9 @@
 ## Unreleased
 
-## 0.4.11 [2025-09-11]
+## 0.4.12 [2025-09-15]
 
 ### Fixes
-- Fix changelog.
+- Handle WebSocket.recv/3 error.
 
 ## 0.4.10 [2025-09-11]
 
