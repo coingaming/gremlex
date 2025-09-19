@@ -19,6 +19,7 @@ defmodule Gremlex.Client do
   alias Gremlex.Deserializer
   alias Mint.HTTP
   alias Mint.WebSocket
+  alias Gremlex.Request
 
   require Logger
 
@@ -46,12 +47,10 @@ defmodule Gremlex.Client do
             conn: HTTP.t(),
             request_ref: Mint.Types.request_ref(),
             request_id: String.t() | nil,
-            caller: pid(),
             websocket: WebSocket.t(),
             status: Mint.Types.status(),
             resp_headers: Mint.Types.headers(),
             closing?: boolean(),
-            mode: :active | :passive,
             connection_opts: Keyword.t()
           }
 
@@ -59,11 +58,9 @@ defmodule Gremlex.Client do
               websocket: nil,
               request_ref: nil,
               request_id: nil,
-              caller: nil,
               status: nil,
               resp_headers: [],
               closing?: false,
-              mode: :active,
               connection_opts: []
   end
 
@@ -77,9 +74,14 @@ defmodule Gremlex.Client do
   """
   @spec query(Gremlex.Graph.t() | String.t(), number() | :infinity) :: response
   def query(query, timeout \\ 30_000) do
+    %Request{requestId: request_id} = request = Gremlex.Request.new(query)
+    payload = Jason.encode!(request)
+
     :poolboy.transaction(
       :gremlex,
-      fn worker_pid -> GenServer.call(worker_pid, {:query, query, timeout}, timeout) end,
+      fn worker_pid ->
+        GenServer.call(worker_pid, {:query, payload, request_id, timeout}, timeout)
+      end,
       timeout
     )
   end
@@ -124,16 +126,9 @@ defmodule Gremlex.Client do
     {:reply, {:error, :CONNECTION_UNAVAILABLE, "WebSocket not connected"}, state}
   end
 
-  def handle_call({:query, query, timeout}, _from, %State{} = state) do
-    # Create the request payload
-    %Gremlex.Request{requestId: request_id} = request = Gremlex.Request.new(query)
-    payload = Jason.encode!(request)
-
-    # Switch to passive mode to synchronously recv responses
-    with {:ok, state} <- change_mode(state, :passive),
-         {:ok, state} <- send_frame(put_in(state.request_id, request_id), {:text, payload}),
-         {:ok, reply} <- recv(state, timeout) do
-      Process.send_after(self(), {:change_mode, :active}, 0)
+  def handle_call({:query, query, request_id, timeout}, _from, %State{} = state) do
+    with {:ok, state} <- send_frame(put_in(state.request_id, request_id), {:text, query}),
+         {:ok, reply} <- handle_receive(state, timeout) do
       schedule_ping()
 
       {:reply, {:ok, reply}, put_in(state.request_id, nil)}
@@ -150,7 +145,7 @@ defmodule Gremlex.Client do
         schedule_ping()
         {:reply, {:error, error_code, reason}, state}
 
-      # Handle WebSocket.recv/3 error: {:error, %Mint.HTTP1{}, Mint.Types.error(), [Mint.Types.response()]}
+      # Handle websocket error: {:error, %Mint.HTTP1{}, Mint.Types.error(), [Mint.Types.response()]}
       {:error, _conn, reason, responses} ->
         Logger.error("[#{@mname}] WebSocket error: #{reason}, responses #{inspect(responses)}")
 
@@ -170,17 +165,6 @@ defmodule Gremlex.Client do
 
         reconnect()
         {:noreply, %State{state | conn: nil, websocket: nil}}
-    end
-  end
-
-  def handle_info({:change_mode, new_mode}, %State{} = state) do
-    case change_mode(state, new_mode) do
-      {:ok, state} ->
-        {:noreply, state}
-
-      {:error, reason} ->
-        Logger.error("[#{@mname}] Failed to change mode #{new_mode}: #{inspect(reason)}")
-        {:noreply, state}
     end
   end
 
@@ -239,10 +223,7 @@ defmodule Gremlex.Client do
     {http_scheme, ws_scheme} = if secure, do: {:https, :wss}, else: {:http, :ws}
 
     with {:ok, conn} <- HTTP.connect(http_scheme, host, port, opts),
-         {:ok, conn, ref} <-
-           WebSocket.upgrade(ws_scheme, conn, ws_path, [],
-             extensions: [WebSocket.PerMessageDeflate]
-           ) do
+         {:ok, conn, ref} <- WebSocket.upgrade(ws_scheme, conn, ws_path, [], []) do
       {:ok, %{state | conn: conn, request_ref: ref}}
     else
       {:error, reason} ->
@@ -251,15 +232,6 @@ defmodule Gremlex.Client do
       {:error, conn, reason} ->
         Mint.HTTP.close(conn)
         {:error, reason}
-    end
-  end
-
-  defp change_mode(%State{mode: mode} = state, mode), do: {:ok, state}
-
-  defp change_mode(%State{conn: conn} = state, new_mode) do
-    case HTTP.set_mode(conn, new_mode) do
-      {:ok, conn} -> {:ok, %{state | conn: conn, mode: new_mode}}
-      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -332,14 +304,21 @@ defmodule Gremlex.Client do
     end
   end
 
-  defp recv(
+  defp handle_receive(
          %State{conn: conn, websocket: websocket, request_ref: ref} = state,
          timeout,
          acc \\ []
        ) do
-    with {:ok, conn2, [{:data, ^ref, data}]} <- WebSocket.recv(conn, 0, timeout),
-         {:ok, _websocket, result} <- WebSocket.decode(websocket, data) do
-      handle_decoded_response(state, result, conn2, timeout, acc)
+    message =
+      receive do
+        message -> message
+      after
+        timeout -> :timeout
+      end
+
+    with {:ok, conn, [{:data, ^ref, data}]} <- WebSocket.stream(conn, message),
+         {:ok, _, result} <- WebSocket.decode(websocket, data) do
+      handle_decoded_response(state, result, conn, timeout, acc)
     end
   end
 
@@ -351,7 +330,7 @@ defmodule Gremlex.Client do
 
   # If only pong messages are received and ignored in the function call above, continue to recv
   def handle_decoded_response(state, [], _conn, timeout, acc) do
-    recv(state, timeout, acc)
+    handle_receive(state, timeout, acc)
   end
 
   def handle_decoded_response(_state, [{:error, reason}], _conn, _timeout, _acc) do
@@ -368,7 +347,7 @@ defmodule Gremlex.Client do
     case status do
       200 -> {:ok, acc ++ result}
       204 -> {:ok, []}
-      206 -> recv(put_in(state.conn, conn), timeout, acc ++ result)
+      206 -> handle_receive(put_in(state.conn, conn), timeout, acc ++ result)
       401 -> {:error, :UNAUTHORIZED, error_message}
       409 -> {:error, :MALFORMED_REQUEST, error_message}
       499 -> {:error, :INVALID_REQUEST_ARGUMENTS, error_message}
@@ -391,7 +370,7 @@ defmodule Gremlex.Client do
     cond do
       200 in statuses -> {:ok, acc ++ results}
       204 in statuses -> {:ok, []}
-      206 in statuses -> recv(put_in(state.conn, conn), timeout, acc ++ results)
+      206 in statuses -> handle_receive(put_in(state.conn, conn), timeout, acc ++ results)
       401 in statuses -> {:error, :UNAUTHORIZED, error_message}
       409 in statuses -> {:error, :MALFORMED_REQUEST, error_message}
       499 in statuses -> {:error, :INVALID_REQUEST_ARGUMENTS, error_message}
