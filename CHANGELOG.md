@@ -1,5 +1,10 @@
 ## Unreleased
 
+## 0.4.13 [2025-09-22]
+
+### Fixes
+- Remove web_socket mode switching active <-> passive.
+
 ## 0.4.12 [2025-09-15]
 
 ### Fixes
