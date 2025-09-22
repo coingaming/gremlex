@@ -72,7 +72,7 @@ defmodule Gremlex.Client do
   * query - A `Gremlex.Graph.t` or raw String query
   * timeout (Default: 30000ms) - Timeout in milliseconds to pass to GenServer and Task.await call
   """
-  @spec query(Gremlex.Graph.t() | String.t(), number() | :infinity) :: response
+  @spec query(Gremlex.Graph.t() | String.t(), timeout()) :: response
   def query(query, timeout \\ 30_000) do
     %Request{requestId: request_id} = request = Gremlex.Request.new(query)
     payload = Jason.encode!(request)
