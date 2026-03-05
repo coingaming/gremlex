@@ -319,6 +319,20 @@ defmodule Gremlex.Client do
     with {:ok, conn, [{:data, ^ref, data}]} <- WebSocket.stream(conn, message),
          {:ok, _, result} <- WebSocket.decode(websocket, data) do
       handle_decoded_response(state, result, conn, timeout, acc)
+    else
+      :unknown ->
+        # If the received message is not from the connection's socket, WebSocket.stream returns :unknown.
+        handle_receive(state, timeout, acc)
+
+      {:error, _ws, reason} ->
+        Logger.error("[#{@mname}] Failed to decode WebSocket message. Error: #{inspect(reason)}")
+        {:error, :SERVER_ERROR, inspect(reason)}
+
+      {:error, _conn, reason, responses} ->
+        # Fixed: Mint.WebSocket.stream can return this
+        Logger.metadata(responses: responses)
+        Logger.error("[#{@mname}] Failed to process websocket message. Error: #{inspect(reason)}")
+        {:error, :SERVER_ERROR, inspect(reason)}
     end
   end
 
