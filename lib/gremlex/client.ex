@@ -137,7 +137,7 @@ defmodule Gremlex.Client do
         # If the received message is not from the connection's socket,
         # WebSocket.stream returns :unknown
         schedule_ping()
-        {:reply, {:ok, []}, state}
+        {:noreply, state}
 
       {:error, reason} ->
         Logger.error("[#{@mname}] Failed to query: #{inspect(reason)}")
