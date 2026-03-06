@@ -314,6 +314,7 @@ defmodule Gremlex.Client do
       handle_decoded_response(state, result, conn, timeout, acc)
     else
       :unknown ->
+        # If the received message is not from the connection's socket, WebSocket.stream returns :unknown.
         handle_receive(state, conn, acc)
 
       {:error, _conn, reason} ->
