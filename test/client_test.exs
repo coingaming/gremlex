@@ -362,8 +362,8 @@ defmodule Gremlex.ClientTests do
     end
   end
 
-  describe "testsjdc" do
-    test "builder syntax survives mailbox noise", _context do
+  describe "handle_receive unknown messages" do
+    test "live worker handles unknown noise mid-traversal", _context do
       worker_pid = :poolboy.checkout(:gremlex)
 
       try do
