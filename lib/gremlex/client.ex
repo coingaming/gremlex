@@ -315,6 +315,7 @@ defmodule Gremlex.Client do
     else
       :unknown ->
         # If the received message is not from the connection's socket, WebSocket.stream returns :unknown.
+        Logger.error("[#{@mname}] Websocket stream received unknown message")
         handle_receive(state, conn, acc)
 
       {:error, _conn, reason} ->
