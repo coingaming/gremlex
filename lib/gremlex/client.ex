@@ -133,12 +133,6 @@ defmodule Gremlex.Client do
 
       {:reply, {:ok, reply}, put_in(state.request_id, nil)}
     else
-      :unknown ->
-        # If the received message is not from the connection's socket,
-        # WebSocket.stream returns :unknown
-        schedule_ping()
-        {:noreply, state}
-
       {:error, reason} ->
         Logger.error("[#{@mname}] Failed to query: #{inspect(reason)}")
 
@@ -150,13 +144,6 @@ defmodule Gremlex.Client do
 
         schedule_ping()
         {:reply, {:error, error_code, reason}, state}
-
-      # Handle websocket error: {:error, %Mint.HTTP1{}, Mint.Types.error(), [Mint.Types.response()]}
-      {:error, _conn, reason, responses} ->
-        Logger.error("[#{@mname}] WebSocket error: #{reason}, responses #{inspect(responses)}")
-
-        schedule_ping()
-        {:reply, {:error, :SERVER_ERROR, to_string(reason)}, state}
     end
   end
 
@@ -325,6 +312,18 @@ defmodule Gremlex.Client do
     with {:ok, conn, [{:data, ^ref, data}]} <- WebSocket.stream(conn, message),
          {:ok, _, result} <- WebSocket.decode(websocket, data) do
       handle_decoded_response(state, result, conn, timeout, acc)
+    else
+      :unknown ->
+        handle_receive(state, conn, acc)
+
+      {:error, _conn, reason} ->
+        Logger.error("[#{@mname}] Websocket decode error: #{inspect(reason)}")
+        {:error, reason}
+
+      {:error, _conn, reason, responses} ->
+        Logger.error("[#{@mname}] WebSocket error: #{reason}, responses #{inspect(responses)}")
+
+        {:error, :SERVER_ERROR, to_string(reason)}
     end
   end
 
