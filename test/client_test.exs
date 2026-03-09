@@ -361,4 +361,24 @@ defmodule Gremlex.ClientTests do
                Gremlex.Client.handle_decoded_response(state, response, conn, timeout, acc)
     end
   end
+
+  describe "handle_receive unknown messages" do
+    test "live worker handles unknown noise mid-traversal", _context do
+      worker_pid = :poolboy.checkout(:gremlex)
+
+      try do
+        # Poison this specific worker's mailbox
+        send(worker_pid, :unknown_noise_test)
+
+        request = Gremlex.Request.new("g.V().count()")
+        payload = Jason.encode!(request)
+
+        assert {:ok, [_count]} =
+                 GenServer.call(worker_pid, {:query, payload, request.requestId, 5000})
+      after
+        # check the worker back in the pool so it doesn't "leak" workers and hang
+        :poolboy.checkin(:gremlex, worker_pid)
+      end
+    end
+  end
 end
