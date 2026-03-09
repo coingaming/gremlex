@@ -1,5 +1,10 @@
 ## Unreleased
 
+## 0.4.14 [2026-03-09]
+
+### Fixes
+- Handle Websocket.Stream unknown response.
+
 ## 0.4.13 [2025-09-22]
 
 ### Fixes
