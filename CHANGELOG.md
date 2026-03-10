@@ -1,5 +1,10 @@
 ## Unreleased
 
+## 0.4.15 [2026-03-10]
+
+### Fixes
+- Fix argument variable
+
 ## 0.4.14 [2026-03-09]
 
 ### Fixes
