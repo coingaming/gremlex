@@ -1,5 +1,10 @@
 ## Unreleased
 
+## 0.4.16 [2026-03-19]
+
+### Fixes
+- Filter connection specific messages
+
 ## 0.4.15 [2026-03-10]
 
 ### Fixes
