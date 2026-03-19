@@ -16,6 +16,8 @@ defmodule Gremlex.Client do
   """
   use GenServer, restart: :transient
 
+  require Mint.HTTP
+
   alias Gremlex.Deserializer
   alias Mint.HTTP
   alias Mint.WebSocket
@@ -304,7 +306,7 @@ defmodule Gremlex.Client do
        ) do
     message =
       receive do
-        message -> message
+        message when Mint.HTTP.is_connection_message(conn, message) -> message
       after
         timeout -> :timeout
       end
@@ -315,7 +317,10 @@ defmodule Gremlex.Client do
     else
       :unknown ->
         # If the received message is not from the connection's socket, WebSocket.stream returns :unknown.
-        Logger.error("[#{@mname}] Websocket stream received unknown message")
+        Logger.error(
+          "[#{@mname}] Websocket stream received unknown message, #{inspect(message, structs: false)}"
+        )
+
         handle_receive(state, timeout, acc)
 
       {:error, _conn, reason} ->
