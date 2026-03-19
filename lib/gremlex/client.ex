@@ -304,7 +304,9 @@ defmodule Gremlex.Client do
        ) do
     message =
       receive do
-        message -> message
+        message when is_tuple(message) and
+               elem(message, 0) in [:tcp, :ssl, :tcp_closed, :ssl_closed, :tcp_error, :ssl_error] ->
+          message
       after
         timeout -> :timeout
       end
@@ -315,7 +317,7 @@ defmodule Gremlex.Client do
     else
       :unknown ->
         # If the received message is not from the connection's socket, WebSocket.stream returns :unknown.
-        Logger.error("[#{@mname}] Websocket stream received unknown message")
+        Logger.error("[#{@mname}] Websocket stream received unknown message, #{inspect(message, structs: false)}")
         handle_receive(state, timeout, acc)
 
       {:error, _conn, reason} ->
