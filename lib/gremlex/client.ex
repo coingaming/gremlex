@@ -16,6 +16,8 @@ defmodule Gremlex.Client do
   """
   use GenServer, restart: :transient
 
+  require Mint.HTTP
+
   alias Gremlex.Deserializer
   alias Mint.HTTP
   alias Mint.WebSocket
@@ -304,10 +306,7 @@ defmodule Gremlex.Client do
        ) do
     message =
       receive do
-        message
-        when is_tuple(message) and
-               elem(message, 0) in [:tcp, :ssl, :tcp_closed, :ssl_closed, :tcp_error, :ssl_error] ->
-          message
+        message when Mint.HTTP.is_connection_message(conn, message) -> message
       after
         timeout -> :timeout
       end
